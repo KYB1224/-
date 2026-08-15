@@ -21,9 +21,6 @@
   <!-- Chart.js (圖表繪製庫) -->
   <script src="https://cdn.jsdelivr.net/npm/Chart.js"></script>
 
-  <!-- Tesseract.js (前端真實 OCR 影像辨識庫) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -78,13 +75,6 @@
     <!-- TAB 2: Add Form View (記一筆) -->
     <section id="tab-add" class="block">
       <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm space-y-4 border border-slate-100">
-        
-        <!-- 📷 OCR 拍照大按鈕 -->
-        <div onclick="triggerOCR()" id="ocrBtnContainer" class="border-2 border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100/80 transition rounded-2xl p-4 text-center cursor-pointer flex items-center justify-center gap-2.5 group shadow-sm">
-          <i data-lucide="camera" class="w-6 h-6 text-sky-600 group-hover:scale-110 transition-transform"></i>
-          <span id="ocrStatusText" class="text-sm sm:text-base font-black text-sky-700">📷 拍照自動帶入 (發票 / 價格標籤)</span>
-          <input type="file" id="ocrFileInput" accept="image/*" class="hidden" onchange="handleOCRImage(event)">
-        </div>
 
         <form id="priceForm" onsubmit="saveRecord(event)" class="space-y-4">
           
@@ -915,68 +905,6 @@
       switchTab('search');
     }
 
-    function triggerOCR() {
-      document.getElementById('ocrFileInput').click();
-    }
-
-    async function handleOCRImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const statusText = document.getElementById('ocrStatusText');
-      const container = document.getElementById('ocrBtnContainer');
-      
-      statusText.innerText = "⏳ 辨識中 (Loading OCR...)...";
-      container.classList.add('animate-pulse', 'bg-amber-50', 'border-amber-300');
-
-      try {
-        const worker = await Tesseract.createWorker('chi_tra+eng');
-        const ret = await worker.recognize(file);
-        const text = ret.data.text;
-        await worker.terminate();
-
-        let detectedName = "";
-        let detectedPrice = "";
-
-        const priceMatches = text.match(/\d+/g);
-        if (priceMatches && priceMatches.length > 0) {
-          const validPrices = priceMatches.filter(n => parseInt(n) > 10 && parseInt(n) < 5000);
-          if (validPrices.length > 0) detectedPrice = validPrices[0];
-        }
-
-        if (text.includes("鮮乳") || text.includes("牛奶") || text.includes("乳粉")) {
-          detectedName = "鮮乳";
-          document.getElementById('inputCategory').value = "冷藏/冷凍";
-        } else if (text.includes("衛生紙") || text.includes("紙巾")) {
-          detectedName = "抽取式衛生紙";
-          document.getElementById('inputCategory').value = "生活用品";
-        }
-
-        if (detectedName) document.getElementById('inputName').value = detectedName;
-        if (detectedPrice) document.getElementById('inputPrice').value = detectedPrice;
-
-        calculateUnitPrice();
-        checkDealAlert();
-        statusText.innerText = "✅ 辨識完成！資料已自動帶入";
-        setTimeout(() => {
-          statusText.innerText = "📷 拍照自動帶入 (發票 / 價格標籤)";
-        }, 3000);
-
-      } catch (err) {
-        console.error("OCR 辨識出錯", err);
-        document.getElementById('inputName').value = "鮮乳";
-        document.getElementById('inputPrice').value = "68";
-        calculateUnitPrice();
-        checkDealAlert();
-        statusText.innerText = "✅ 已帶入解析預設值";
-        setTimeout(() => {
-          statusText.innerText = "📷 拍照自動帶入 (發票 / 價格標籤)";
-        }, 3000);
-      } finally {
-        container.classList.remove('animate-pulse', 'bg-amber-50', 'border-amber-300');
-      }
-    }
-
     function updateDashboardData() {
       const productSelect = document.getElementById('trendProductSelect');
       const uniqueProducts = [...new Set(records.map(r => r.name.trim()))];
@@ -1036,7 +964,6 @@
     }
 
     function updateTrendChart() {
-      // 🛡️ 防護：確認 Chart.js 是否已成功載入
       if (typeof Chart === 'undefined') {
         console.warn("Chart.js 尚未載入完成");
         return;
@@ -1226,7 +1153,6 @@
     }
 
     function registerServiceWorker() {
-      // 🛡️ 僅在 http 或 https 協定下註冊 Service Worker，避免本地 file:// 報錯
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         const swCode = `
           self.addEventListener('install', e => self.skipWaiting());
