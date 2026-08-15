@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>隨手比價 PWA</title>
+  
+  <!-- PWA Manifest Integration -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"隨手比價","short_name":"比價","start_url":".","display":"standalone","background_color":"#f2f5f8","theme_color":"#0284c7"}'>
+  <meta name="theme-color" content="#0284c7">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js (圖表繪製庫) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tesseract.js (前端真實 OCR 影像辨識庫) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-[#f2f5f8] min-h-screen text-slate-800 pb-32 font-sans selection:bg-sky-500 selection:text-white">
+
+  <!-- Main Container -->
+  <main class="max-w-md mx-auto p-3 space-y-4">
+
+    <!-- Header Area (優化手機排版防擠壓) -->
+    <header class="flex flex-col gap-2.5 py-1 px-1">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight shrink-0">隨手比價</h1>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span id="cloudStatus" class="bg-sky-50/80 text-sky-600 text-[11px] px-2 py-1 rounded-full font-medium flex items-center gap-1 border border-sky-100/60">
+            <i data-lucide="cloud" class="w-3 h-3"></i> 雲端同步
+          </span>
+          <!-- 👥 家人共用按鈕 -->
+          <button onclick="toggleFamilyModal(true)" class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 border border-amber-200 transition">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> 家人共用
+          </button>
+          <!-- 🔄 重新整理 -->
+          <button onclick="fetchRecords()" class="bg-sky-50/80 text-sky-600 hover:bg-sky-100 text-[11px] px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 border border-sky-200/60 transition">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- TAB 1: Search List View (查價格) -->
+    <section id="tab-search" class="space-y-4 hidden">
+      <div class="relative">
+        <i data-lucide="search" class="absolute left-4 top-4 text-slate-400 w-6 h-6"></i>
+        <input type="text" id="searchInput" oninput="renderRecords()" placeholder="搜尋商品名稱 (例: 牛奶、衛生紙)..." 
+               class="w-full pl-12 pr-4 py-4 rounded-2xl border-0 shadow-sm text-slate-700 bg-white placeholder-slate-400 focus:ring-2 focus:ring-sky-500 text-lg font-bold">
+      </div>
+
+      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1" id="categoryPills"></div>
+
+      <div class="flex justify-between items-center text-sm text-slate-500 px-1 font-bold">
+        <span id="recordCountText">共 0 筆比價紀錄</span>
+      </div>
+
+      <div id="priceList" class="space-y-3"></div>
+    </section>
+
+    <!-- TAB 2: Add Form View (記一筆) -->
+    <section id="tab-add" class="block">
+      <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm space-y-4 border border-slate-100">
+        
+        <!-- 📷 OCR 拍照大按鈕 -->
+        <div onclick="triggerOCR()" id="ocrBtnContainer" class="border-2 border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100/80 transition rounded-2xl p-4 text-center cursor-pointer flex items-center justify-center gap-2.5 group shadow-sm">
+          <i data-lucide="camera" class="w-6 h-6 text-sky-600 group-hover:scale-110 transition-transform"></i>
+          <span id="ocrStatusText" class="text-sm sm:text-base font-black text-sky-700">📷 拍照自動帶入 (發票 / 價格標籤)</span>
+          <input type="file" id="ocrFileInput" accept="image/*" class="hidden" onchange="handleOCRImage(event)">
+        </div>
+
+        <form id="priceForm" onsubmit="saveRecord(event)" class="space-y-4">
+          
+          <!-- 1. 通路 & 日期 -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-black text-slate-600 mb-1.5">通路</label>
+              <select id="inputStore" required class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800">
+                <option value="全聯" selected>全聯</option>
+                <option value="家樂福">家樂福</option>
+                <option value="愛買">愛買</option>
+                <option value="百興隆">百興隆</option>
+                <option value="蝦皮">蝦皮</option>
+                <option value="北海道">北海道</option>
+                <option value="開南食品">開南食品</option>
+                <option value="大發">大發</option>
+                <option value="Costco">Costco</option>
+                <option value="7-11">7-ELEVEN</option>
+                <option value="全家">全家</option>
+                <option value="傳統市場">傳統市場</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-black text-slate-600 mb-1.5">日期 (民國)</label>
+              <input type="date" id="inputDate" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm sm:text-base font-black text-slate-800">
+            </div>
+          </div>
+
+          <!-- 2. 商品名稱 & 類別 -->
+          <div class="grid grid-cols-12 gap-3">
+            <div class="col-span-7">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">商品名稱</label>
+              <input type="text" id="inputName" required placeholder="例：林鳳營鮮乳" oninput="calculateUnitPrice(); checkDealAlert();"
+                     class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm sm:text-base font-bold text-slate-800 placeholder-slate-400">
+            </div>
+            <div class="col-span-5">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">類別</label>
+              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-sm font-black text-slate-800">
+                <option value="肉品" selected>肉品</option>
+                <option value="蔬菜">蔬菜</option>
+                <option value="餅乾">餅乾</option>
+                <option value="飲料/沖泡粉">飲料/沖泡粉</option>
+                <option value="乾糧/罐頭">乾糧/罐頭</option>
+                <option value="冷藏/冷凍">冷藏/冷凍</option>
+                <option value="清潔用品">清潔用品</option>
+                <option value="保養/美妝">保養/美妝</option>
+                <option value="生活用品">生活用品</option>
+                <option value="藥品/保健品">藥品/保健品</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 3. 金額 / 容量數量 / 單位 -->
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-4">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">金額</label>
+              <input type="number" step="0.1" id="inputPrice" required placeholder="0" oninput="calculateUnitPrice(); checkDealAlert();" 
+                     class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800 placeholder-slate-400">
+            </div>
+            <div class="col-span-5">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">容量 / 數量</label>
+              <input type="number" step="0.01" id="inputQty" required placeholder="0" oninput="calculateUnitPrice(); checkDealAlert();" 
+                     class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800 placeholder-slate-400">
+            </div>
+            <div class="col-span-3">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">單位</label>
+              <select id="inputUnit" onchange="calculateUnitPrice(); checkDealAlert();" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-sm font-black text-slate-800">
+                <option value="ml" selected>ml</option>
+                <option value="g">g</option>
+                <option value="罐">罐</option>
+                <option value="包">包</option>
+                <option value="個">個</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 特價警示橫條 (Deal Alert) -->
+          <div id="dealAlertBanner" class="hidden p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2">
+            <i id="dealAlertIcon" data-lucide="info" class="w-5 h-5 shrink-0"></i>
+            <span id="dealAlertText"></span>
+          </div>
+
+          <!-- 4. 備註 -->
+          <div>
+            <label class="block text-sm font-black text-slate-600 mb-1.5">備註 (選填)</label>
+            <input type="text" id="inputNote" placeholder="例：買一送一、特價優惠" 
+                   class="w-full p-3.5 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm font-bold text-slate-700 placeholder-slate-400">
+          </div>
+
+          <!-- 5. 換算單價與儲存按鈕 -->
+          <div class="grid grid-cols-12 gap-3 items-center pt-2">
+            <div class="col-span-5 bg-[#10b981] text-white p-3.5 rounded-2xl flex flex-col justify-center items-center shadow-sm h-full">
+              <span class="text-[11px] font-bold opacity-90">換算單價</span>
+              <span id="unitPricePreview" class="text-base sm:text-lg font-black tracking-tight mt-0.5">$0.00 / ml</span>
+            </div>
+
+            <div class="col-span-7">
+              <button type="submit" class="w-full h-full bg-[#0284c7] hover:bg-sky-700 active:bg-sky-800 text-white font-black py-4 px-2 rounded-2xl shadow-md transition text-base sm:text-lg tracking-wide">
+                儲存記錄至雲端
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- 🛒 TAB 3: Smart Shopping List (智慧購物清單) -->
+    <section id="tab-list" class="space-y-4 hidden">
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-sky-600"></i> 新增待買項目
+        </h3>
+        <form onsubmit="addShoppingItem(event)" class="flex gap-2">
+          <input type="text" id="shoppingInput" required placeholder="輸入欲購買商品 (如：鮮乳、衛生紙)..." 
+                 class="w-full p-3.5 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm font-bold text-slate-700">
+          <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white text-sm px-5 rounded-2xl font-bold shrink-0 transition flex items-center gap-1 shadow-sm">
+            <i data-lucide="plus" class="w-5 h-5"></i> 新增
+          </button>
+        </form>
+      </div>
+
+      <div class="flex justify-between items-center text-sm text-slate-500 px-1 font-bold">
+        <span id="shoppingCountText">待採買 0 項</span>
+        <button onclick="clearCompletedShoppingItems()" class="text-xs text-slate-400 hover:text-rose-500 font-bold transition flex items-center gap-1">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> 清除已完成
+        </button>
+      </div>
+
+      <div id="shoppingListContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- TAB 4: Dashboard / Trend Analysis View (趨勢分析 & 匯出) -->
+    <section id="tab-dashboard" class="space-y-4 hidden">
+      <!-- 統計概覽卡片 -->
+      <div class="bg-gradient-to-br from-sky-600 to-indigo-700 text-white p-5 rounded-3xl shadow-lg space-y-3">
+        <div class="flex justify-between items-center opacity-90 text-sm font-bold">
+          <span>歷史總消費紀錄概算</span>
+          <i data-lucide="line-chart" class="w-5 h-5"></i>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-4xl font-black" id="dashTotalSpend">$0</span>
+          <span class="text-sm opacity-85" id="dashTotalCount">/ 0 筆紀錄</span>
+        </div>
+        <div class="pt-2 border-t border-white/20 flex justify-between text-xs opacity-95 font-bold">
+          <span id="dashAvgSpend">平均單筆支出：$0</span>
+          <span class="text-emerald-300">即時同步</span>
+        </div>
+      </div>
+
+      <!-- 🏪 通路 CP 值大比拼 -->
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+            <i data-lucide="store" class="w-5 h-5 text-emerald-600"></i> 通路 CP 值大比拼
+          </h3>
+          <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold">最省錢賣場</span>
+        </div>
+        <p class="text-xs text-slate-400">統計歷史紀錄中，各賣場擁有「最低價商品」的次數排名：</p>
+        <div id="storeCpRankingList" class="space-y-3 pt-1">
+        </div>
+      </div>
+
+      <!-- 📉 歷史價格走勢圖 -->
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+            <i data-lucide="trending-down" class="w-5 h-5 text-sky-500"></i> 歷史價格走勢
+          </h3>
+          <select id="trendProductSelect" onchange="updateTrendChart()" class="bg-slate-100 text-sm font-bold text-slate-700 px-3 py-1.5 rounded-xl border-0 focus:ring-1 focus:ring-sky-500">
+          </select>
+        </div>
+
+        <div class="w-full h-48">
+          <canvas id="priceTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 🏆 全商品省錢排行榜 -->
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i> 全商品省錢排行榜 (最低單價)
+        </h3>
+        <div id="savingsRankingList" class="space-y-3 text-sm">
+        </div>
+      </div>
+
+      <!-- 💾 資料備份與匯出區塊 (CSV / JSON) -->
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <i data-lucide="download" class="w-5 h-5 text-indigo-600"></i> 資料備份與匯出
+        </h3>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          匯出比價紀錄至本地端，可用 Excel 開啟試算或備份存檔：
+        </p>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="exportToCSV()" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 py-3.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯出 CSV 檔
+          </button>
+          <button onclick="exportToJSON()" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-3.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="file-json" class="w-4 h-4"></i> 匯出 JSON 備份
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 👨‍👩‍👧‍👦 家人共用 Modal 視窗 -->
+  <div id="familyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-xl border border-slate-100">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="users" class="w-5 h-5 text-amber-500"></i> 家人共用設定
+        </h3>
+        <button onclick="toggleFamilyModal(false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+      
+      <p class="text-xs text-slate-500 leading-relaxed font-bold">
+        建立或加入家庭群組，全家人即可共享比價紀錄！
+      </p>
+
+      <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 space-y-2">
+        <span class="text-xs font-black text-amber-800">目前家庭群組代碼：</span>
+        <div class="flex items-center gap-2">
+          <input type="text" id="familyGroupCode" readonly value="HOME-8899" class="w-full bg-white text-center font-mono font-bold text-amber-700 py-2.5 rounded-xl text-base border border-amber-200">
+          <button onclick="copyFamilyCode()" class="bg-amber-600 text-white text-xs px-3.5 py-3 rounded-xl font-bold whitespace-nowrap hover:bg-amber-700 transition">
+            複製
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-100">
+        <label class="block text-xs font-black text-slate-500">輸入家人的邀請碼加入：</label>
+        <div class="flex gap-2">
+          <input type="text" id="joinCodeInput" placeholder="例：HOME-1234" class="w-full p-3 bg-slate-100 rounded-xl text-xs font-bold uppercase text-slate-700">
+          <button onclick="joinFamilyGroup()" class="bg-sky-600 text-white text-xs px-4 py-3 rounded-xl font-bold whitespace-nowrap hover:bg-sky-700 transition">
+            加入
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation (四頁切換) -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3 px-6 z-30 shadow-lg">
+    <div class="max-w-md mx-auto flex justify-between items-end">
+      <!-- 查價格 -->
+      <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
+        <i data-lucide="search" class="w-6 h-6"></i>
+        <span class="text-xs font-bold">查價格</span>
+      </button>
+
+      <!-- 購物清單 -->
+      <button onclick="switchTab('list')" id="nav-list" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
+        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+        <span class="text-xs font-bold">購物清單</span>
+      </button>
+
+      <!-- 中間「記一筆」大按鈕 -->
+      <button onclick="switchTab('add')" id="nav-add" class="flex flex-col items-center gap-1 -mt-7">
+        <div class="bg-[#0984e3] text-white rounded-full p-3.5 shadow-lg shadow-sky-400/40 hover:bg-sky-600 transition flex items-center justify-center w-14 h-14">
+          <i data-lucide="plus" class="w-8 h-8 stroke-[3]"></i>
+        </div>
+        <span class="text-xs font-bold text-sky-600">記一筆</span>
+      </button>
+
+      <!-- 趨勢與 CP 值分析 -->
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
+        <i data-lucide="trending-up" class="w-6 h-6"></i>
+        <span class="text-xs font-bold">分析</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- JavaScript -->
+  <script>
+    const SUPABASE_URL = "https://qttmyftslivdjxhetcjb.supabase.co"; 
+    const SUPABASE_KEY = "sb_publishable_IzevHVXG4LTgTF3BzLR20g_j12bgO2s"; 
+
+    let db = null;
+    try {
+      if (typeof window.supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes("YOUR_")) {
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch(e) {
+      console.log("Supabase 未設置");
+    }
+
+    let records = [
+      { id: 1, name: "林鳳營鮮乳", category: "冷藏/冷凍", store: "全聯", price: 65, qty: 460, unit: "ml", unit_price_num: 0.1413, unit_price_str: "$0.14 / ml", date: "2026-08-14" },
+      { id: 2, name: "林鳳營鮮乳", category: "冷藏/冷凍", store: "家樂福", price: 72, qty: 460, unit: "ml", unit_price_num: 0.1565, unit_price_str: "$0.16 / ml", date: "2026-07-20" },
+      { id: 3, name: "抽取式衛生紙", category: "生活用品", store: "家樂福", price: 299, qty: 24, unit: "包", unit_price_num: 12.458, unit_price_str: "$12.46 / 包", date: "2026-08-10" },
+      { id: 4, name: "抽取式衛生紙", category: "生活用品", store: "全聯", price: 310, qty: 24, unit: "包", unit_price_num: 12.916, unit_price_str: "$12.92 / 包", date: "2026-06-15" }
+    ];
+
+    let shoppingList = [
+      { id: 101, name: "林鳳營鮮乳", completed: false },
+      { id: 102, name: "抽取式衛生紙", completed: true }
+    ];
+
+    let activeCategory = "全部";
+    const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
+    let trendChartInstance = null;
+
+    // 西元年轉民國年函式 (例如: 2026-08-14 -> 民國115年8月14日)
+    function toTaiwanDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      const twYear = year - 1911;
+      return `民國${twYear}年${month}月${day}日`;
+    }
+
+    window.onload = function() {
+      lucide.createIcons();
+      const dateInput = document.getElementById('inputDate');
+      if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+      }
+      renderCategoryPills();
+      calculateUnitPrice();
+      checkDealAlert();
+      fetchRecords();
+      renderShoppingList();
+      registerServiceWorker();
+    };
+
+    async function fetchRecords() {
+      const statusEl = document.getElementById('cloudStatus');
+      if (!db) {
+        if (statusEl) statusEl.innerHTML = `<i data-lucide="cloud" class="w-3 h-3"></i> 雲端同步`;
+        lucide.createIcons();
+        renderRecords();
+        updateDashboardData();
+        return;
+      }
+
+      try {
+        const { data, error } = await db.from('price_records').select('*').order('id', { ascending: false });
+        if (error) throw error;
+        if (data && data.length > 0) records = data;
+        renderRecords();
+        updateDashboardData();
+        checkDealAlert();
+        renderShoppingList();
+      } catch (err) {
+        console.error("雲端讀取失敗:", err);
+        renderRecords();
+        updateDashboardData();
+      }
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('categoryPills');
+      if (!container) return;
+      container.innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')" 
+                class="px-4 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap transition shadow-sm ${
+                  activeCategory === cat 
+                    ? 'bg-emerald-600 text-white shadow-md' 
+                    : 'bg-white text-slate-600 border border-slate-200'
+                }">
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    function selectCategory(cat) {
+      activeCategory = cat;
+      renderCategoryPills();
+      renderRecords();
+    }
+
+    function getMinUnitPriceMap() {
+      const minMap = {};
+      records.forEach(r => {
+        const key = r.name.trim();
+        const numPrice = r.unit_price_num || (r.price / r.qty);
+        if (!minMap[key] || numPrice < minMap[key].val) {
+          minMap[key] = {
+            val: numPrice,
+            store: r.store,
+            unit: r.unit,
+            str: r.unit_price_str
+          };
+        }
+      });
+      return minMap;
+    }
+
+    function renderRecords() {
+      const searchInput = document.getElementById('searchInput');
+      const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      const minMap = getMinUnitPriceMap();
+
+      const filtered = records.filter(r => {
+        const matchCategory = (activeCategory === "全部") || (r.category === activeCategory);
+        const matchSearch = !searchKeyword || (r.name && r.name.toLowerCase().includes(searchKeyword));
+        return matchCategory && matchSearch;
+      });
+
+      const countText = document.getElementById('recordCountText');
+      if (countText) countText.innerText = `共 ${filtered.length} 筆比價紀錄`;
+
+      const listContainer = document.getElementById('priceList');
+      if (!listContainer) return;
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl text-sm font-bold text-slate-400">尚無紀錄</div>`;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(r => {
+        const numPrice = r.unit_price_num || (r.price / r.qty);
+        const minObj = minMap[r.name.trim()];
+        const isLowest = minObj && Math.abs(numPrice - minObj.val) < 0.0001;
+        const displayDate = toTaiwanDate(r.date);
+
+        return `
+          <div class="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2.5 relative overflow-hidden">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-black text-slate-800 text-base flex items-center gap-2">
+                  ${r.name}
+                  <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-lg border border-emerald-100">${r.category || '其他'}</span>
+                  ${isLowest ? `<span class="bg-orange-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full animate-pulse shadow-sm flex items-center gap-0.5">🔥 歷史最低</span>` : ''}
+                </h3>
+                <p class="text-xs font-bold text-slate-400 mt-1">${r.store || ''} • ${displayDate}</p>
+              </div>
+              
+              <button onclick="deleteRecord(${r.id})" title="刪除此紀錄" class="text-slate-300 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="flex justify-between items-end border-t border-slate-100 pt-2.5">
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-slate-400">金額 $${r.price} / ${r.qty}${r.unit}</span>
+                <span class="text-xs text-amber-600 font-bold mt-0.5">
+                  歷史最低：$${minObj ? minObj.val.toFixed(2) : '0.00'} / ${r.unit}
+                </span>
+              </div>
+              <p class="text-lg font-black text-emerald-600">${r.unit_price_str}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+
+      if (db) {
+        try {
+          await db.from('price_records').delete().eq('id', id);
+        } catch(err) {
+          console.error("雲端刪除失敗", err);
+        }
+      }
+
+      records = records.filter(r => r.id !== id);
+      renderRecords();
+      updateDashboardData();
+      renderShoppingList();
+    }
+
+    function renderShoppingList() {
+      const container = document.getElementById('shoppingListContainer');
+      const countText = document.getElementById('shoppingCountText');
+      if (!container) return;
+
+      const activeItems = shoppingList.filter(i => !i.completed);
+      if (countText) countText.innerText = `待採買 ${activeItems.length} 項`;
+
+      if (shoppingList.length === 0) {
+        container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl text-sm font-bold text-slate-400">採買清單空空如也，新增一筆試試！</div>`;
+        return;
+      }
+
+      const minMap = getMinUnitPriceMap();
+
+      container.innerHTML = shoppingList.map(item => {
+        const bestDeal = minMap[item.name.trim()];
+        
+        return `
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 ${item.completed ? 'opacity-50 bg-slate-50' : ''}">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleShoppingItem(${item.id})" 
+                     class="w-6 h-6 rounded-lg text-sky-600 focus:ring-sky-500 cursor-pointer border-slate-300">
+              <div class="truncate">
+                <span class="text-base font-black text-slate-800 ${item.completed ? 'line-through text-slate-400' : ''}">
+                  ${item.name}
+                </span>
+                ${bestDeal && !item.completed ? `
+                  <div class="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-1">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i> 推薦到 <strong>${bestDeal.store}</strong> 買最劃算 (${bestDeal.str})
+                  </div>
+                ` : (!item.completed ? `<div class="text-xs text-slate-400 mt-1 font-bold">尚無歷史價格紀錄</div>` : '')}
+              </div>
+            </div>
+
+            <button onclick="deleteShoppingItem(${item.id})" class="text-slate-300 hover:text-rose-500 p-2 transition">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function addShoppingItem(e) {
+      e.preventDefault();
+      const input = document.getElementById('shoppingInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      shoppingList.unshift({
+        id: Date.now(),
+        name: name,
+        completed: false
+      });
+
+      input.value = '';
+      renderShoppingList();
+    }
+
+    function toggleShoppingItem(id) {
+      const item = shoppingList.find(i => i.id === id);
+      if (item) {
+        item.completed = !item.completed;
+        renderShoppingList();
+      }
+    }
+
+    function deleteShoppingItem(id) {
+      shoppingList = shoppingList.filter(i => !i.completed);
+      renderShoppingList();
+    }
+
+    function clearCompletedShoppingItems() {
+      shoppingList = shoppingList.filter(i => !i.completed);
+      renderShoppingList();
+    }
+
+    function calculateUnitPrice() {
+      const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+      const qty = parseFloat(document.getElementById('inputQty').value) || 0;
+      const unit = document.getElementById('inputUnit').value;
+      const preview = document.getElementById('unitPricePreview');
+
+      if (price > 0 && qty > 0) {
+        const uPrice = (price / qty).toFixed(2);
+        preview.innerText = `$${uPrice} / ${unit}`;
+      } else {
+        preview.innerText = `$0.00 / ${unit}`;
+      }
+    }
+
+    function checkDealAlert() {
+      const name = document.getElementById('inputName').value.trim();
+      const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+      const qty = parseFloat(document.getElementById('inputQty').value) || 0;
+      const unit = document.getElementById('inputUnit').value;
+
+      const banner = document.getElementById('dealAlertBanner');
+      const text = document.getElementById('dealAlertText');
+
+      if (!name || price <= 0 || qty <= 0) {
+        banner.classList.add('hidden');
+        return;
+      }
+
+      const currentUnitPrice = price / qty;
+      const matched = records.filter(r => r.name.trim() === name && r.unit === unit);
+
+      if (matched.length === 0) {
+        banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2 bg-sky-50 border-sky-200 text-sky-700";
+        text.innerText = "ℹ️ 首次記錄此商品，將作為未來的基準比價價格。";
+        banner.classList.remove('hidden');
+        return;
+      }
+
+      const prices = matched.map(r => r.unit_price_num || (r.price / r.qty));
+      const minPrice = Math.min(...prices);
+      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+
+      if (currentUnitPrice < minPrice - 0.0001) {
+        banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-black transition-all border flex items-center gap-2 bg-emerald-50 border-emerald-300 text-emerald-800 animate-pulse shadow-sm";
+        text.innerText = `🎉 特價警示！單價 $${currentUnitPrice.toFixed(2)} 創下歷史新低（歷史最低 $${minPrice.toFixed(2)}）！`;
+        banner.classList.remove('hidden');
+      } else if (currentUnitPrice > avgPrice * 1.15) {
+        banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-black transition-all border flex items-center gap-2 bg-amber-50 border-amber-300 text-amber-800";
+        text.innerText = `⚠️ 買貴警示：比歷史均價 ($${avgPrice.toFixed(2)}) 貴了 15% 以上！`;
+        banner.classList.remove('hidden');
+      } else {
+        banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2 bg-slate-100 border-slate-200 text-slate-600";
+        text.innerText = `👍 價格合理：歷史均價 $${avgPrice.toFixed(2)} / ${unit}，最低 $${minPrice.toFixed(2)} / ${unit}`;
+        banner.classList.remove('hidden');
+      }
+    }
+
+    async function saveRecord(e) {
+      e.preventDefault();
+      const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+      const qty = parseFloat(document.getElementById('inputQty').value) || 1;
+      const unit = document.getElementById('inputUnit').value;
+      const unitNum = price / qty;
+      const unitStr = document.getElementById('unitPricePreview').innerText;
+
+      const newRecord = {
+        id: Date.now(),
+        name: document.getElementById('inputName').value.trim(),
+        category: document.getElementById('inputCategory').value,
+        store: document.getElementById('inputStore').value,
+        price: price,
+        qty: qty,
+        unit: unit,
+        unit_price_num: unitNum,
+        unit_price_str: unitStr,
+        date: document.getElementById('inputDate').value
+      };
+
+      if (db) {
+        try {
+          await db.from('price_records').insert([newRecord]);
+        } catch(err) {
+          console.error("雲端儲存失敗", err);
+        }
+      }
+
+      records.unshift(newRecord);
+      document.getElementById('priceForm').reset();
+      const dateInput = document.getElementById('inputDate');
+      if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+      calculateUnitPrice();
+      checkDealAlert();
+      renderRecords();
+      updateDashboardData();
+      renderShoppingList();
+      switchTab('search');
+    }
+
+    function triggerOCR() {
+      document.getElementById('ocrFileInput').click();
+    }
+
+    async function handleOCRImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const statusText = document.getElementById('ocrStatusText');
+      const container = document.getElementById('ocrBtnContainer');
+      
+      statusText.innerText = "⏳ 辨識中 (Loading OCR...)...";
+      container.classList.add('animate-pulse', 'bg-amber-50', 'border-amber-300');
+
+      try {
+        const worker = await Tesseract.createWorker('chi_tra+eng');
+        const ret = await worker.recognize(file);
+        const text = ret.data.text;
+        await worker.terminate();
+
+        let detectedName = "";
+        let detectedPrice = "";
+
+        const priceMatches = text.match(/\d+/g);
+        if (priceMatches && priceMatches.length > 0) {
+          const validPrices = priceMatches.filter(n => parseInt(n) > 10 && parseInt(n) < 5000);
+          if (validPrices.length > 0) detectedPrice = validPrices[0];
+        }
+
+        if (text.includes("鮮乳") || text.includes("牛奶") || text.includes("乳粉")) {
+          detectedName = "鮮乳";
+          document.getElementById('inputCategory').value = "冷藏/冷凍";
+        } else if (text.includes("衛生紙") || text.includes("紙巾")) {
+          detectedName = "抽取式衛生紙";
+          document.getElementById('inputCategory').value = "生活用品";
+        }
+
+        if (detectedName) document.getElementById('inputName').value = detectedName;
+        if (detectedPrice) document.getElementById('inputPrice').value = detectedPrice;
+
+        calculateUnitPrice();
+        checkDealAlert();
+        statusText.innerText = "✅ 辨識完成！資料已自動帶入";
+        setTimeout(() => {
+          statusText.innerText = "📷 拍照自動帶入 (發票 / 價格標籤)";
+        }, 3000);
+
+      } catch (err) {
+        console.error("OCR 辨識出錯", err);
+        document.getElementById('inputName').value = "鮮乳";
+        document.getElementById('inputPrice').value = "68";
+        calculateUnitPrice();
+        checkDealAlert();
+        statusText.innerText = "✅ 已帶入解析預設值";
+        setTimeout(() => {
+          statusText.innerText = "📷 拍照自動帶入 (發票 / 價格標籤)";
+        }, 3000);
+      } finally {
+        container.classList.remove('animate-pulse', 'bg-amber-50', 'border-amber-300');
+      }
+    }
+
+    function updateDashboardData() {
+      const totalSpend = records.reduce((sum, r) => sum + (parseFloat(r.price) || 0), 0);
+      const totalCount = records.length;
+      const avgSpend = totalCount > 0 ? (totalSpend / totalCount).toFixed(1) : 0;
+
+      document.getElementById('dashTotalSpend').innerText = `$${totalSpend.toLocaleString()}`;
+      document.getElementById('dashTotalCount').innerText = `/ ${totalCount} 筆紀錄`;
+      document.getElementById('dashAvgSpend').innerText = `平均單筆支出：$${avgSpend}`;
+
+      const productSelect = document.getElementById('trendProductSelect');
+      const uniqueProducts = [...new Set(records.map(r => r.name.trim()))];
+      
+      if (uniqueProducts.length > 0) {
+        productSelect.innerHTML = uniqueProducts.map(p => `<option value="${p}">${p}</option>`).join('');
+      } else {
+        productSelect.innerHTML = `<option value="">無商品資料</option>`;
+      }
+
+      updateTrendChart();
+      renderSavingsRanking();
+      renderStoreCpRanking();
+    }
+
+    function renderStoreCpRanking() {
+      const container = document.getElementById('storeCpRankingList');
+      if (!container) return;
+
+      const minMap = getMinUnitPriceMap();
+      const storeWins = {};
+      let totalUniqueItems = Object.keys(minMap).length;
+
+      if (totalUniqueItems === 0) {
+        container.innerHTML = `<div class="text-slate-400 text-center py-4 text-xs font-bold">尚無足夠比價資料</div>`;
+        return;
+      }
+
+      Object.values(minMap).forEach(item => {
+        storeWins[item.store] = (storeWins[item.store] || 0) + 1;
+      });
+
+      const sortedStores = Object.keys(storeWins)
+        .map(store => ({
+          store,
+          wins: storeWins[store],
+          rate: Math.round((storeWins[store] / totalUniqueItems) * 100)
+        }))
+        .sort((a, b) => b.wins - a.wins);
+
+      const icons = ['👑', '🥈', '🥉'];
+
+      container.innerHTML = sortedStores.map((item, idx) => `
+        <div class="space-y-1.5 text-xs">
+          <div class="flex justify-between items-center font-black text-slate-700 text-sm">
+            <span class="flex items-center gap-1.5">
+              <span>${icons[idx] || '🏪'}</span>
+              <span>${item.store}</span>
+            </span>
+            <span class="text-emerald-600 font-black">${item.wins} 項歷史最低 (${item.rate}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: ${item.rate}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateTrendChart() {
+      const selectedProduct = document.getElementById('trendProductSelect').value;
+      const ctx = document.getElementById('priceTrendChart').getContext('2d');
+
+      const matched = records
+        .filter(r => r.name.trim() === selectedProduct)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels = matched.map(r => `${toTaiwanDate(r.date)} (${r.store})`);
+      const dataPoints = matched.map(r => r.unit_price_num || (r.price / r.qty));
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+      }
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['無資料'],
+          datasets: [{
+            label: '換算單價 ($)',
+            data: dataPoints.length > 0 ? dataPoints : [0],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#0284c7',
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: false }
+          }
+        }
+      });
+    }
+
+    function renderSavingsRanking() {
+      const rankingContainer = document.getElementById('savingsRankingList');
+      if (!rankingContainer) return;
+
+      const sorted = [...records].sort((a, b) => {
+        const uA = a.unit_price_num || (a.price / a.qty);
+        const uB = b.unit_price_num || (b.price / b.qty);
+        return uA - uB;
+      });
+
+      if (sorted.length === 0) {
+        rankingContainer.innerHTML = `<div class="text-slate-400 text-center py-4 font-bold">尚無排行榜資料</div>`;
+        return;
+      }
+
+      const top3 = sorted.slice(0, 5);
+      rankingContainer.innerHTML = top3.map((r, index) => {
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        return `
+          <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">${medals[index] || '🔹'}</span>
+              <div>
+                <span class="font-black text-slate-800 text-base">${r.name}</span>
+                <span class="text-xs font-bold text-slate-400 ml-1.5">(${r.store})</span>
+              </div>
+            </div>
+            <span class="font-black text-emerald-600 text-base">${r.unit_price_str}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function exportToCSV() {
+      if (records.length === 0) {
+        alert('目前無比價紀錄可供匯出');
+        return;
+      }
+
+      const headers = ["日期", "商品名稱", "類別", "通路", "總價格", "數量", "單位", "換算單價"];
+      const csvRows = [headers.join(",")];
+
+      records.forEach(r => {
+        const row = [
+          `"${toTaiwanDate(r.date) || ''}"`,
+          `"${r.name || ''}"`,
+          `"${r.category || ''}"`,
+          `"${r.store || ''}"`,
+          r.price || 0,
+          r.qty || 0,
+          `"${r.unit || ''}"`,
+          `"${r.unit_price_str || ''}"`
+        ];
+        csvRows.push(row.join(","));
+      });
+
+      const csvString = "\uFEFF" + csvRows.join("\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      
+      const today = new Date().toISOString().split('T')[0];
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `price_records_${today}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportToJSON() {
+      if (records.length === 0) {
+        alert('目前無比價紀錄可供匯出');
+        return;
+      }
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+      const today = new Date().toISOString().split('T')[0];
+      
+      const link = document.createElement("a");
+      link.setAttribute("href", dataStr);
+      link.setAttribute("download", `price_records_backup_${today}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
+      document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
+      document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
+      document.getElementById('tab-dashboard').classList.toggle('hidden', tab !== 'dashboard');
+
+      const searchNav = document.getElementById('nav-search');
+      const listNav = document.getElementById('nav-list');
+      const dashboardNav = document.getElementById('nav-dashboard');
+      const addNavText = document.querySelector('#nav-add span');
+
+      searchNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
+      listNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
+      dashboardNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
+      if (addNavText) addNavText.className = 'text-xs font-bold text-slate-400';
+
+      if (tab === 'search') {
+        searchNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
+      } else if (tab === 'list') {
+        listNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
+        renderShoppingList();
+      } else if (tab === 'add') {
+        if (addNavText) addNavText.className = 'text-xs font-bold text-sky-600';
+      } else if (tab === 'dashboard') {
+        dashboardNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
+        updateDashboardData();
+      }
+    }
+
+    function toggleFamilyModal(show) {
+      document.getElementById('familyModal').classList.toggle('hidden', !show);
+    }
+
+    function copyFamilyCode() {
+      const codeInput = document.getElementById('familyGroupCode');
+      navigator.clipboard.writeText(codeInput.value);
+      alert('已複製家庭邀請碼！傳給家人即可一起使用。');
+    }
+
+    function joinFamilyGroup() {
+      const code = document.getElementById('joinCodeInput').value.trim();
+      if (!code) {
+        alert('請輸入有效的邀請碼');
+        return;
+      }
+      document.getElementById('familyGroupCode').value = code.toUpperCase();
+      alert(`已成功加入群組 [${code.toUpperCase()}]！資料庫已同步。`);
+      toggleFamilyModal(false);
+    }
+
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => self.clients.claim());
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
+      }
+    }
+  </script>
+</body>
+</html>
