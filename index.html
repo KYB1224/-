@@ -35,7 +35,7 @@
   <!-- Main Container -->
   <main class="max-w-md mx-auto p-3 space-y-4">
 
-    <!-- Header Area (優化手機排版防擠壓) -->
+    <!-- Header Area -->
     <header class="flex flex-col gap-2.5 py-1 px-1">
       <div class="flex justify-between items-center">
         <h1 class="text-2xl font-black text-slate-800 tracking-tight shrink-0">隨手比價</h1>
@@ -45,7 +45,7 @@
           </span>
           <!-- 👥 家人共用按鈕 -->
           <button onclick="toggleFamilyModal(true)" class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 border border-amber-200 transition">
-            <i data-lucide="users" class="w-3.5 h-3.5"></i> 家人共用
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> 群組: <span id="currentGroupBadge">HOME-8899</span>
           </button>
           <!-- 🔄 重新整理 -->
           <button onclick="fetchRecords()" class="bg-sky-50/80 text-sky-600 hover:bg-sky-100 text-[11px] px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 border border-sky-200/60 transition">
@@ -106,8 +106,8 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-black text-slate-600 mb-1.5">日期 (民國)</label>
-              <input type="date" id="inputDate" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm sm:text-base font-black text-slate-800">
+              <label class="block text-sm font-black text-slate-600 mb-1.5">日期</label>
+              <input type="date" id="inputDate" required class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm sm:text-base font-black text-slate-800">
             </div>
           </div>
 
@@ -116,11 +116,11 @@
             <div class="col-span-7">
               <label class="block text-sm font-black text-slate-600 mb-1.5">商品名稱</label>
               <input type="text" id="inputName" required placeholder="例：林鳳營鮮乳" oninput="calculateUnitPrice(); checkDealAlert();"
-                     class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm sm:text-base font-bold text-slate-800 placeholder-slate-400">
+                     class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800 placeholder-slate-400">
             </div>
             <div class="col-span-5">
               <label class="block text-sm font-black text-slate-600 mb-1.5">類別</label>
-              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-sm font-black text-slate-800">
+              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800">
                 <option value="肉品" selected>肉品</option>
                 <option value="蔬菜">蔬菜</option>
                 <option value="餅乾">餅乾</option>
@@ -150,7 +150,7 @@
             </div>
             <div class="col-span-3">
               <label class="block text-sm font-black text-slate-600 mb-1.5">單位</label>
-              <select id="inputUnit" onchange="calculateUnitPrice(); checkDealAlert();" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-sm font-black text-slate-800">
+              <select id="inputUnit" onchange="calculateUnitPrice(); checkDealAlert();" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base sm:text-lg font-black text-slate-800">
                 <option value="ml" selected>ml</option>
                 <option value="g">g</option>
                 <option value="罐">罐</option>
@@ -160,7 +160,7 @@
             </div>
           </div>
 
-          <!-- 特價警示橫條 (Deal Alert) -->
+          <!-- 特價警示橫條 -->
           <div id="dealAlertBanner" class="hidden p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2">
             <i id="dealAlertIcon" data-lucide="info" class="w-5 h-5 shrink-0"></i>
             <span id="dealAlertText"></span>
@@ -216,9 +216,8 @@
       <div id="shoppingListContainer" class="space-y-3"></div>
     </section>
 
-    <!-- TAB 4: Dashboard / Trend Analysis View (趨勢分析 & 匯出) -->
+    <!-- TAB 4: Dashboard / Trend Analysis View -->
     <section id="tab-dashboard" class="space-y-4 hidden">
-      <!-- 統計概覽卡片 -->
       <div class="bg-gradient-to-br from-sky-600 to-indigo-700 text-white p-5 rounded-3xl shadow-lg space-y-3">
         <div class="flex justify-between items-center opacity-90 text-sm font-bold">
           <span>歷史總消費紀錄概算</span>
@@ -234,7 +233,6 @@
         </div>
       </div>
 
-      <!-- 🏪 通路 CP 值大比拼 -->
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
         <div class="flex justify-between items-center">
           <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
@@ -247,7 +245,6 @@
         </div>
       </div>
 
-      <!-- 📉 歷史價格走勢圖 -->
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
         <div class="flex justify-between items-center">
           <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
@@ -262,7 +259,6 @@
         </div>
       </div>
 
-      <!-- 🏆 全商品省錢排行榜 -->
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
         <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
           <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i> 全商品省錢排行榜 (最低單價)
@@ -271,7 +267,6 @@
         </div>
       </div>
 
-      <!-- 💾 資料備份與匯出區塊 (CSV / JSON) -->
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
         <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
           <i data-lucide="download" class="w-5 h-5 text-indigo-600"></i> 資料備份與匯出
@@ -298,7 +293,7 @@
     <div class="bg-white w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-xl border border-slate-100">
       <div class="flex justify-between items-center">
         <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-          <i data-lucide="users" class="w-5 h-5 text-amber-500"></i> 家人共用設定
+          <i data-lucide="users" class="w-5 h-5 text-amber-500"></i> 家人共用群組設定
         </h3>
         <button onclick="toggleFamilyModal(false)" class="text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-6 h-6"></i>
@@ -306,11 +301,11 @@
       </div>
       
       <p class="text-xs text-slate-500 leading-relaxed font-bold">
-        建立或加入家庭群組，全家人即可共享比價紀錄！
+        切換或輸入家庭群組代碼，只有輸入相同代碼的人才能同步看到彼此的資料！
       </p>
 
       <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 space-y-2">
-        <span class="text-xs font-black text-amber-800">目前家庭群組代碼：</span>
+        <span class="text-xs font-black text-amber-800">目前群組代碼：</span>
         <div class="flex items-center gap-2">
           <input type="text" id="familyGroupCode" readonly value="HOME-8899" class="w-full bg-white text-center font-mono font-bold text-amber-700 py-2.5 rounded-xl text-base border border-amber-200">
           <button onclick="copyFamilyCode()" class="bg-amber-600 text-white text-xs px-3.5 py-3 rounded-xl font-bold whitespace-nowrap hover:bg-amber-700 transition">
@@ -320,33 +315,30 @@
       </div>
 
       <div class="space-y-2 pt-2 border-t border-slate-100">
-        <label class="block text-xs font-black text-slate-500">輸入家人的邀請碼加入：</label>
+        <label class="block text-xs font-black text-slate-500">切換或加入其他群組代碼：</label>
         <div class="flex gap-2">
           <input type="text" id="joinCodeInput" placeholder="例：HOME-1234" class="w-full p-3 bg-slate-100 rounded-xl text-xs font-bold uppercase text-slate-700">
           <button onclick="joinFamilyGroup()" class="bg-sky-600 text-white text-xs px-4 py-3 rounded-xl font-bold whitespace-nowrap hover:bg-sky-700 transition">
-            加入
+            確定切換
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bottom Navigation (四頁切換) -->
+  <!-- Bottom Navigation -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3 px-6 z-30 shadow-lg">
     <div class="max-w-md mx-auto flex justify-between items-end">
-      <!-- 查價格 -->
       <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="search" class="w-6 h-6"></i>
         <span class="text-xs font-bold">查價格</span>
       </button>
 
-      <!-- 購物清單 -->
       <button onclick="switchTab('list')" id="nav-list" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="shopping-bag" class="w-6 h-6"></i>
         <span class="text-xs font-bold">購物清單</span>
       </button>
 
-      <!-- 中間「記一筆」大按鈕 -->
       <button onclick="switchTab('add')" id="nav-add" class="flex flex-col items-center gap-1 -mt-7">
         <div class="bg-[#0984e3] text-white rounded-full p-3.5 shadow-lg shadow-sky-400/40 hover:bg-sky-600 transition flex items-center justify-center w-14 h-14">
           <i data-lucide="plus" class="w-8 h-8 stroke-[3]"></i>
@@ -354,7 +346,6 @@
         <span class="text-xs font-bold text-sky-600">記一筆</span>
       </button>
 
-      <!-- 趨勢與 CP 值分析 -->
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="trending-up" class="w-6 h-6"></i>
         <span class="text-xs font-bold">分析</span>
@@ -376,41 +367,40 @@
       console.log("Supabase 未設置");
     }
 
-    let records = [
-      { id: 1, name: "林鳳營鮮乳", category: "冷藏/冷凍", store: "全聯", price: 65, qty: 460, unit: "ml", unit_price_num: 0.1413, unit_price_str: "$0.14 / ml", date: "2026-08-14" },
-      { id: 2, name: "林鳳營鮮乳", category: "冷藏/冷凍", store: "家樂福", price: 72, qty: 460, unit: "ml", unit_price_num: 0.1565, unit_price_str: "$0.16 / ml", date: "2026-07-20" },
-      { id: 3, name: "抽取式衛生紙", category: "生活用品", store: "家樂福", price: 299, qty: 24, unit: "包", unit_price_num: 12.458, unit_price_str: "$12.46 / 包", date: "2026-08-10" },
-      { id: 4, name: "抽取式衛生紙", category: "生活用品", store: "全聯", price: 310, qty: 24, unit: "包", unit_price_num: 12.916, unit_price_str: "$12.92 / 包", date: "2026-06-15" }
-    ];
+    // 取得或初始化目前使用者的群組代碼 (預設 HOME-8899，可透過 localStorage 記憶)
+    let currentGroupCode = localStorage.getItem('price_app_group') || "HOME-8899";
 
+    let records = [];
     let shoppingList = [
-      { id: 101, name: "林鳳營鮮乳", completed: false },
-      { id: 102, name: "抽取式衛生紙", completed: true }
+      { id: 101, name: "妮維雅嫩白水感身體乳", completed: false },
+      { id: 102, name: "Pony Effect水透光妝前防曬50g", completed: true }
     ];
 
     let activeCategory = "全部";
     const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
     let trendChartInstance = null;
 
-    // 西元年轉民國年函式 (例如: 2026-08-14 -> 民國115年8月14日)
     function toTaiwanDate(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
-      if (parts.length !== 3) return dateStr;
+      if (parts.length < 2) return dateStr;
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10);
-      const day = parseInt(parts[2], 10);
       const twYear = year - 1911;
-      return `民國${twYear}年${month}月${day}日`;
+      return `民國${twYear}年${month}月`;
     }
 
     window.onload = function() {
       lucide.createIcons();
-      const dateInput = document.getElementById('inputDate');
-      if (dateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
+      document.getElementById('currentGroupBadge').innerText = currentGroupCode;
+      document.getElementById('familyGroupCode').value = currentGroupCode;
+
+      const dateEl = document.getElementById('inputDate');
+      if (dateEl) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        dateEl.value = todayStr;
       }
+
       renderCategoryPills();
       calculateUnitPrice();
       checkDealAlert();
@@ -430,9 +420,14 @@
       }
 
       try {
-        const { data, error } = await db.from('price_records').select('*').order('id', { ascending: false });
+        // 🔒 只撈取符合目前群組代碼的資料
+        const { data, error } = await db.from('price_records')
+          .select('*')
+          .eq('group_code', currentGroupCode)
+          .order('id', { ascending: false });
+
         if (error) throw error;
-        if (data && data.length > 0) records = data;
+        records = data || [];
         renderRecords();
         updateDashboardData();
         checkDealAlert();
@@ -500,7 +495,7 @@
       if (!listContainer) return;
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl text-sm font-bold text-slate-400">尚無紀錄</div>`;
+        listContainer.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl text-sm font-bold text-slate-400">此群組尚無比價紀錄</div>`;
         return;
       }
 
@@ -511,25 +506,28 @@
         const displayDate = toTaiwanDate(r.date);
 
         return `
-          <div class="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2.5 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div>
-                <h3 class="font-black text-slate-800 text-base flex items-center gap-2">
-                  ${r.name}
-                  <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-lg border border-emerald-100">${r.category || '其他'}</span>
-                  ${isLowest ? `<span class="bg-orange-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full animate-pulse shadow-sm flex items-center gap-0.5">🔥 歷史最低</span>` : ''}
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 relative overflow-hidden">
+            <div class="flex justify-between items-start gap-3">
+              <div class="min-w-0 pr-2">
+                <h3 class="font-black text-slate-800 text-base flex flex-wrap items-center gap-2">
+                  <span class="break-words">${r.name}</span>
+                  <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-lg border border-emerald-100 shrink-0">${r.category || '其他'}</span>
+                  ${isLowest ? `<span class="bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full animate-pulse shadow-sm flex items-center gap-0.5 shrink-0">🔥 歷史最低</span>` : ''}
                 </h3>
-                <p class="text-xs font-bold text-slate-400 mt-1">${r.store || ''} • ${displayDate}</p>
+                <p class="text-xs font-bold text-slate-400 mt-1.5">${r.store || ''} • ${displayDate}</p>
+                
+                <!-- 💬 備註顯示欄位 -->
+                ${r.note ? `<div class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-xl">💬 ${r.note}</div>` : ''}
               </div>
               
-              <button onclick="deleteRecord(${r.id})" title="刪除此紀錄" class="text-slate-300 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition">
+              <button onclick="deleteRecord(${r.id})" title="刪除此紀錄" class="text-slate-300 hover:text-rose-500 p-2 rounded-xl hover:bg-rose-50 transition shrink-0">
                 <i data-lucide="trash-2" class="w-5 h-5"></i>
               </button>
             </div>
-            <div class="flex justify-between items-end border-t border-slate-100 pt-2.5">
+            <div class="flex justify-between items-end border-t border-slate-100 pt-3">
               <div class="flex flex-col">
                 <span class="text-xs font-bold text-slate-400">金額 $${r.price} / ${r.qty}${r.unit}</span>
-                <span class="text-xs text-amber-600 font-bold mt-0.5">
+                <span class="text-xs text-amber-600 font-bold mt-1">
                   歷史最低：$${minObj ? minObj.val.toFixed(2) : '0.00'} / ${r.unit}
                 </span>
               </div>
@@ -577,7 +575,7 @@
         const bestDeal = minMap[item.name.trim()];
         
         return `
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 ${item.completed ? 'opacity-50 bg-slate-50' : ''}">
+          <div class="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 ${item.completed ? 'opacity-50 bg-slate-50' : ''}">
             <div class="flex items-center gap-3.5 min-w-0">
               <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleShoppingItem(${item.id})" 
                      class="w-6 h-6 rounded-lg text-sky-600 focus:ring-sky-500 cursor-pointer border-slate-300">
@@ -700,9 +698,12 @@
       const unit = document.getElementById('inputUnit').value;
       const unitNum = price / qty;
       const unitStr = document.getElementById('unitPricePreview').innerText;
+      const dateStr = document.getElementById('inputDate').value;
+      const noteStr = document.getElementById('inputNote').value.trim();
 
       const newRecord = {
         id: Date.now(),
+        group_code: currentGroupCode, // 🔒 儲存時綁定目前的群組代碼
         name: document.getElementById('inputName').value.trim(),
         category: document.getElementById('inputCategory').value,
         store: document.getElementById('inputStore').value,
@@ -711,7 +712,8 @@
         unit: unit,
         unit_price_num: unitNum,
         unit_price_str: unitStr,
-        date: document.getElementById('inputDate').value
+        note: noteStr,
+        date: dateStr
       };
 
       if (db) {
@@ -724,10 +726,13 @@
 
       records.unshift(newRecord);
       document.getElementById('priceForm').reset();
-      const dateInput = document.getElementById('inputDate');
-      if (dateInput) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-      }
+      
+      const dateEl = document.getElementById('inputDate');
+      if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+      document.getElementById('inputStore').value = "全聯";
+      document.getElementById('inputCategory').value = "肉品";
+      document.getElementById('inputUnit').value = "ml";
+
       calculateUnitPrice();
       checkDealAlert();
       renderRecords();
@@ -946,7 +951,7 @@
         return;
       }
 
-      const headers = ["日期", "商品名稱", "類別", "通路", "總價格", "數量", "單位", "換算單價"];
+      const headers = ["日期", "商品名稱", "類別", "通路", "總價格", "數量", "單位", "換算單價", "備註"];
       const csvRows = [headers.join(",")];
 
       records.forEach(r => {
@@ -958,7 +963,8 @@
           r.price || 0,
           r.qty || 0,
           `"${r.unit || ''}"`,
-          `"${r.unit_price_str || ''}"`
+          `"${r.unit_price_str || ''}"`,
+          `"${r.note || ''}"`
         ];
         csvRows.push(row.join(","));
       });
@@ -1029,18 +1035,29 @@
     function copyFamilyCode() {
       const codeInput = document.getElementById('familyGroupCode');
       navigator.clipboard.writeText(codeInput.value);
-      alert('已複製家庭邀請碼！傳給家人即可一起使用。');
+      alert('已複製群組代碼！將此代碼傳給家人，請他們在APP內輸入即可共享。');
     }
 
     function joinFamilyGroup() {
-      const code = document.getElementById('joinCodeInput').value.trim();
+      const codeInput = document.getElementById('joinCodeInput');
+      const code = codeInput.value.trim().toUpperCase();
       if (!code) {
-        alert('請輸入有效的邀請碼');
+        alert('請輸入有效的群組代碼');
         return;
       }
-      document.getElementById('familyGroupCode').value = code.toUpperCase();
-      alert(`已成功加入群組 [${code.toUpperCase()}]！資料庫已同步。`);
+
+      currentGroupCode = code;
+      localStorage.setItem('price_app_group', code); // 記住使用者的群組代碼
+
+      document.getElementById('currentGroupBadge').innerText = code;
+      document.getElementById('familyGroupCode').value = code;
+      codeInput.value = '';
+
       toggleFamilyModal(false);
+      alert(`已成功切換至群組 [${code}]！正在重新載入該群組資料...`);
+      
+      // 重新從雲端載入該代碼的資料
+      fetchRecords();
     }
 
     function registerServiceWorker() {
