@@ -113,7 +113,7 @@
             </div>
             <div class="col-span-5">
               <label class="block text-sm font-black text-slate-600 mb-1.5">類別</label>
-              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-sm font-black text-slate-800">
+              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm font-black text-slate-800">
                 <option value="肉品">肉品</option>
                 <option value="蔬菜">蔬菜</option>
                 <option value="餅乾">餅乾</option>
@@ -143,7 +143,7 @@
             </div>
             <div class="col-span-3">
               <label class="block text-sm font-black text-slate-600 mb-1.5">單位</label>
-              <select id="inputUnit" onchange="calculateUnitPrice(); checkDealAlert();" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-xs sm:text-base font-black text-slate-800">
+              <select id="inputUnit" onchange="calculateUnitPrice(); checkDealAlert();" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base font-black text-slate-800">
                 <option value="ml" selected>ml</option>
                 <option value="g">g</option>
                 <option value="罐">罐</option>
@@ -225,14 +225,16 @@
 
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
         <div class="flex justify-between items-center gap-2">
-          <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5 shrink-0">
+          <h3 class="font-black text-slate-800 text-base flex items-center gap-1.5 shrink-0">
             <i data-lucide="trending-down" class="w-5 h-5 text-sky-500"></i> 歷史價格走勢
           </h3>
-          <select id="trendProductSelect" onchange="updateTrendChart()" class="bg-slate-100 text-sm font-bold text-slate-700 px-3 py-1.5 rounded-xl border-0 focus:ring-1 focus:ring-sky-500 w-full max-w-[200px] truncate">
+          <!-- 放大並加粗商品下拉選單 -->
+          <select id="trendProductSelect" onchange="updateTrendChart()" class="bg-slate-100 text-base font-black text-slate-800 px-3.5 py-2.5 rounded-xl border-0 focus:ring-2 focus:ring-sky-500 w-full max-w-[210px] truncate shadow-sm">
           </select>
         </div>
 
-        <div class="w-full min-h-[260px] h-64 relative block">
+        <!-- 確保手機上有明確的高度與寬度 -->
+        <div class="w-full relative" style="height: 280px;">
           <canvas id="priceTrendChart" class="w-full h-full"></canvas>
         </div>
       </div>
@@ -351,7 +353,7 @@
           </div>
           <div class="col-span-5">
             <label class="block text-xs font-black text-slate-600 mb-1">類別</label>
-            <select id="editCategory" class="w-full p-3 rounded-xl bg-slate-100 border-0 text-xs sm:text-sm font-black text-slate-800">
+            <select id="editCategory" class="w-full p-3 rounded-xl bg-slate-100 border-0 text-sm font-black text-slate-800">
               <option value="肉品">肉品</option>
               <option value="蔬菜">蔬菜</option>
               <option value="餅乾">餅乾</option>
@@ -405,29 +407,29 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation -->
+  <!-- Bottom Navigation: 字體放大加粗 -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3 px-6 z-30 shadow-lg">
     <div class="max-w-md mx-auto flex justify-between items-end">
       <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="search" class="w-6 h-6"></i>
-        <span class="text-xs font-bold">查價格</span>
+        <span class="text-xs font-black">查價格</span>
       </button>
 
       <button onclick="switchTab('list')" id="nav-list" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="shopping-bag" class="w-6 h-6"></i>
-        <span class="text-xs font-bold">購物清單</span>
+        <span class="text-xs font-black">購物清單</span>
       </button>
 
       <button onclick="switchTab('add')" id="nav-add" class="flex flex-col items-center gap-1 -mt-7">
         <div class="bg-[#0984e3] text-white rounded-full p-3.5 shadow-lg shadow-sky-400/40 hover:bg-sky-600 transition flex items-center justify-center w-14 h-14">
           <i data-lucide="plus" class="w-8 h-8 stroke-[3]"></i>
         </div>
-        <span class="text-xs font-bold text-sky-600">記一筆</span>
+        <span class="text-xs font-black text-sky-600">記一筆</span>
       </button>
 
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="trending-up" class="w-6 h-6"></i>
-        <span class="text-xs font-bold">分析</span>
+        <span class="text-xs font-black">分析</span>
       </button>
     </div>
   </nav>
@@ -1112,7 +1114,7 @@
       searchNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
       listNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
       dashboardNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
-      if (addNavText) addNavText.className = 'text-xs font-bold text-slate-400';
+      if (addNavText) addNavText.className = 'text-xs font-black text-slate-400';
 
       if (tab === 'search') {
         searchNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
@@ -1120,12 +1122,12 @@
         listNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
         renderShoppingList();
       } else if (tab === 'add') {
-        if (addNavText) addNavText.className = 'text-xs font-bold text-sky-600';
+        if (addNavText) addNavText.className = 'text-xs font-black text-sky-600';
       } else if (tab === 'dashboard') {
         dashboardNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
         updateDashboardData();
-        // 確保切換到分析頁時重新計算圖表尺寸
-        setTimeout(() => { if (trendChartInstance) trendChartInstance.resize(); }, 50);
+        // 強制重新計算 Chart.js 畫布大小
+        setTimeout(() => { if (trendChartInstance) trendChartInstance.resize(); }, 100);
       }
     }
 
