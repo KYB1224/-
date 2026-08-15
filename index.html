@@ -231,7 +231,7 @@
           <!-- 放大並加粗商品關鍵字搜尋框 -->
           <div class="relative">
             <i data-lucide="search" class="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5"></i>
-            <input type="text" id="trendSearchInput" oninput="updateTrendChart()" placeholder="輸入關鍵字搜尋 (例如: 牛)..." 
+            <input type="text" id="trendSearchInput" oninput="updateTrendChart()" placeholder="輸入關鍵字搜尋 (例如: 南僑)..." 
                    class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100 text-base font-black text-slate-800 border-0 focus:ring-2 focus:ring-sky-500 shadow-sm placeholder-slate-400">
           </div>
         </div>
@@ -965,39 +965,40 @@
     }
 
     function updateTrendChart() {
-      if (typeof Chart === 'undefined') {
-        console.warn("Chart.js 尚未載入完成");
-        return;
-      }
+      if (typeof Chart === 'undefined') return;
 
       const keywordInput = document.getElementById('trendSearchInput');
       const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
       const ctx = document.getElementById('priceTrendChart').getContext('2d');
 
-      // 找出符合關鍵字的所有相異商品名稱
-      const allProductNames = [...new Set(records.map(r => r.name.trim()))];
+      // 1. 找出所有相異商品
+      const allProductNames = [...new Set(records.map(r => (r.name || '').trim()))].filter(Boolean);
+      
+      // 2. 根據關鍵字過濾商品（只要名稱包含關鍵字即可）
       const matchedProducts = keyword 
         ? allProductNames.filter(p => p.toLowerCase().includes(keyword))
-        : allProductNames.slice(0, 1); // 如果沒輸入關鍵字，預設顯示第一個商品
+        : (allProductNames.length > 0 ? [allProductNames[0]] : []);
 
-      // 收集所有出現過的日期並排序
-      const allDates = [...new Set(records.map(r => r.date))].sort((a, b) => new Date(a) - new Date(b));
+      // 3. 收集所有出現過的日期並進行標準升冪排序
+      const allDates = [...new Set(records.map(r => r.date))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
       const labels = allDates.map(d => toTaiwanDate(d));
 
       const datasets = [];
 
       matchedProducts.forEach((prodName, idx) => {
+        // 抓出該商品所有紀錄並依日期排序
         const prodRecords = records
-          .filter(r => r.name.trim() === prodName)
+          .filter(r => (r.name || '').trim() === prodName)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // 對應每個日期找出當時的單價（若當天有多筆或無則對應）
-        const dataMap = {};
+        // 建立日期對應單價的對應表（若同一天有多筆則取最後一筆或平均）
+        const datePriceMap = {};
         prodRecords.forEach(r => {
-          dataMap[r.date] = r.unit_price_num || (r.price / r.qty);
+          datePriceMap[r.date] = r.unit_price_num || (r.price / r.qty);
         });
 
-        const dataPoints = allDates.map(d => dataMap[d] !== undefined ? dataMap[d] : null);
+        // 依照全局日期軸填入數據
+        const dataPoints = allDates.map(d => datePriceMap[d] !== undefined ? datePriceMap[d] : null);
         const color = chartColors[idx % chartColors.length];
 
         datasets.push({
@@ -1006,8 +1007,9 @@
           borderColor: color,
           backgroundColor: color,
           fill: false,
-          tension: 0.2,
-          pointRadius: 5,
+          tension: 0.1,
+          pointRadius: 6,
+          pointHoverRadius: 8,
           spanGaps: true
         });
       });
@@ -1019,10 +1021,10 @@
       trendChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels.length > 0 ? labels : ['無資料'],
+          labels: labels.length > 0 ? labels : ['尚無日期紀錄'],
           datasets: datasets.length > 0 ? datasets : [{
-            label: '請輸入關鍵字搜尋',
-            data: [0],
+            label: keyword ? '找不到符合的商品' : '請輸入關鍵字搜尋走勢',
+            data: [],
             borderColor: '#cbd5e1'
           }]
         },
@@ -1037,7 +1039,13 @@
             }
           },
           scales: {
-            y: { beginAtZero: false }
+            y: { 
+              beginAtZero: false,
+              ticks: { font: { weight: 'bold' } }
+            },
+            x: {
+              ticks: { font: { weight: 'bold' } }
+            }
           }
         }
       });
@@ -1156,7 +1164,6 @@
       } else if (tab === 'dashboard') {
         dashboardNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
         updateDashboardData();
-        // 強制重新計算 Chart.js 畫布大小並重新渲染
         setTimeout(() => { 
           if (trendChartInstance) {
             trendChartInstance.resize();
