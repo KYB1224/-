@@ -226,7 +226,6 @@
           <h3 class="font-black text-slate-800 text-base flex items-center gap-1.5">
             <i data-lucide="trending-down" class="w-5 h-5 text-sky-500"></i> 歷史價格走勢
           </h3>
-          <!-- 放大並加粗商品關鍵字搜尋框 -->
           <div class="relative">
             <i data-lucide="search" class="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5"></i>
             <input type="text" id="trendSearchInput" oninput="updateTrendChart()" placeholder="輸入關鍵字搜尋 (例如: 南僑)..." 
@@ -234,7 +233,6 @@
           </div>
         </div>
 
-        <!-- 強制給予固定高度 320px 確保手機上絕對不會空白 -->
         <div class="w-full relative" style="height: 320px;">
           <canvas id="priceTrendChart" class="w-full h-full"></canvas>
         </div>
@@ -793,7 +791,6 @@
     }
 
     function clearCompletedShoppingItems() {
-      // 修正：這裡改為過濾掉已完成的項目 (保留未完成的項目)
       shoppingList = shoppingList.filter(i => !i.completed);
       renderShoppingList();
     }
@@ -968,7 +965,8 @@
 
       const keywordInput = document.getElementById('trendSearchInput');
       const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
-      const ctx = document.getElementById('priceTrendChart').getContext('2d');
+      const ctx = document.getElementById('priceTrendChart');
+      if (!ctx) return;
 
       const allProductNames = [...new Set(records.map(r => (r.name || '').trim()))].filter(Boolean);
       
@@ -977,6 +975,24 @@
         matchedProducts = allProductNames.filter(p => p.toLowerCase().includes(keyword));
       } else if (allProductNames.length > 0) {
         matchedProducts = [allProductNames[0]];
+      }
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+        trendChartInstance = null;
+      }
+
+      // 如果找不到相符的商品，顯示空圖表避免崩潰
+      if (matchedProducts.length === 0) {
+        trendChartInstance = new Chart(ctx.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: ['無符合商品'],
+            datasets: [{ label: '請輸入正確關鍵字', data: [0], borderColor: '#cbd5e1' }]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+        return;
       }
 
       const allDates = [...new Set(records.map(r => r.date))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
@@ -1010,19 +1026,11 @@
         });
       });
 
-      if (trendChartInstance) {
-        trendChartInstance.destroy();
-      }
-
-      trendChartInstance = new Chart(ctx, {
+      trendChartInstance = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
           labels: labels,
-          datasets: datasets.length > 0 ? datasets : [{
-            label: '找不到符合的商品走勢',
-            data: allDates.map(() => 0),
-            borderColor: '#cbd5e1'
-          }]
+          datasets: datasets
         },
         options: {
           responsive: true,
