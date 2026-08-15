@@ -556,7 +556,7 @@
     function getMinUnitPriceMap() {
       const minMap = {};
       records.forEach(r => {
-        const key = r.name.trim();
+        const key = (r.name || '').trim();
         const numPrice = r.unit_price_num || (r.price / r.qty);
         if (!minMap[key] || numPrice < minMap[key].val) {
           minMap[key] = {
@@ -594,7 +594,7 @@
 
       listContainer.innerHTML = filtered.map(r => {
         const numPrice = r.unit_price_num || (r.price / r.qty);
-        const minObj = minMap[r.name.trim()];
+        const minObj = minMap[(r.name || '').trim()];
         const isLowest = minObj && Math.abs(numPrice - minObj.val) < 0.0001;
         const displayDate = toTaiwanDate(r.date);
 
@@ -737,7 +737,7 @@
       const minMap = getMinUnitPriceMap();
 
       container.innerHTML = shoppingList.map(item => {
-        const bestDeal = minMap[item.name.trim()];
+        const bestDeal = minMap[(item.name || '').trim()];
         
         return `
           <div class="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 ${item.completed ? 'opacity-50 bg-slate-50' : ''}">
@@ -828,7 +828,7 @@
       }
 
       const currentUnitPrice = price / qty;
-      const matched = records.filter(r => r.name.trim() === name && r.unit === unit);
+      const matched = records.filter(r => (r.name || '').trim() === name && r.unit === unit);
 
       if (matched.length === 0) {
         banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2 bg-sky-50 border-sky-200 text-sky-700";
@@ -971,33 +971,33 @@
       const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
       const ctx = document.getElementById('priceTrendChart').getContext('2d');
 
-      // 1. 找出所有相異商品
+      // 取得所有相異商品名稱
       const allProductNames = [...new Set(records.map(r => (r.name || '').trim()))].filter(Boolean);
       
-      // 2. 根據關鍵字過濾商品（只要名稱包含關鍵字即可）
-      const matchedProducts = keyword 
-        ? allProductNames.filter(p => p.toLowerCase().includes(keyword))
-        : (allProductNames.length > 0 ? [allProductNames[0]] : []);
+      // 若沒輸入關鍵字，預設選取第一個商品（或顯示全部匹配）
+      let matchedProducts = [];
+      if (keyword) {
+        matchedProducts = allProductNames.filter(p => p.toLowerCase().includes(keyword));
+      } else if (allProductNames.length > 0) {
+        matchedProducts = [allProductNames[0]]; // 預設顯示第一項讓畫面有東西
+      }
 
-      // 3. 收集所有出現過的日期並進行標準升冪排序
+      // 收集所有日期並排序
       const allDates = [...new Set(records.map(r => r.date))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
-      const labels = allDates.map(d => toTaiwanDate(d));
+      const labels = allDates.length > 0 ? allDates.map(d => toTaiwanDate(d)) : ['無日期資料'];
 
       const datasets = [];
 
       matchedProducts.forEach((prodName, idx) => {
-        // 抓出該商品所有紀錄並依日期排序
         const prodRecords = records
           .filter(r => (r.name || '').trim() === prodName)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // 建立日期對應單價的對應表（若同一天有多筆則取最後一筆或平均）
         const datePriceMap = {};
         prodRecords.forEach(r => {
           datePriceMap[r.date] = r.unit_price_num || (r.price / r.qty);
         });
 
-        // 依照全局日期軸填入數據
         const dataPoints = allDates.map(d => datePriceMap[d] !== undefined ? datePriceMap[d] : null);
         const color = chartColors[idx % chartColors.length];
 
@@ -1021,10 +1021,10 @@
       trendChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels.length > 0 ? labels : ['尚無日期紀錄'],
+          labels: labels,
           datasets: datasets.length > 0 ? datasets : [{
-            label: keyword ? '找不到符合的商品' : '請輸入關鍵字搜尋走勢',
-            data: [],
+            label: '找不到符合的商品走勢',
+            data: allDates.map(() => 0),
             borderColor: '#cbd5e1'
           }]
         },
