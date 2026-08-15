@@ -224,17 +224,20 @@
       </div>
 
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
-        <div class="flex justify-between items-center gap-2">
-          <h3 class="font-black text-slate-800 text-base flex items-center gap-1.5 shrink-0">
+        <div class="flex flex-col gap-2">
+          <h3 class="font-black text-slate-800 text-base flex items-center gap-1.5">
             <i data-lucide="trending-down" class="w-5 h-5 text-sky-500"></i> 歷史價格走勢
           </h3>
-          <!-- 放大並加粗商品下拉選單 -->
-          <select id="trendProductSelect" onchange="updateTrendChart()" class="bg-slate-100 text-base font-black text-slate-800 px-3.5 py-2.5 rounded-xl border-0 focus:ring-2 focus:ring-sky-500 w-full max-w-[210px] truncate shadow-sm">
-          </select>
+          <!-- 放大並加粗商品關鍵字搜尋框 -->
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5"></i>
+            <input type="text" id="trendSearchInput" oninput="updateTrendChart()" placeholder="輸入關鍵字搜尋 (例如: 牛)..." 
+                   class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100 text-base font-black text-slate-800 border-0 focus:ring-2 focus:ring-sky-500 shadow-sm placeholder-slate-400">
+          </div>
         </div>
 
-        <!-- 確保手機上有明確的高度與寬度 -->
-        <div class="w-full relative" style="height: 280px;">
+        <!-- 強制給予固定高度 320px 確保手機上絕對不會空白 -->
+        <div class="w-full relative" style="height: 320px;">
           <canvas id="priceTrendChart" class="w-full h-full"></canvas>
         </div>
       </div>
@@ -407,7 +410,7 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation: 字體放大加粗 -->
+  <!-- Bottom Navigation -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3 px-6 z-30 shadow-lg">
     <div class="max-w-md mx-auto flex justify-between items-end">
       <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
@@ -454,6 +457,11 @@
     let activeCategory = "全部";
     const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
     let trendChartInstance = null;
+
+    const chartColors = [
+      '#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+    ];
 
     function getCurrentGroupCode() {
       return localStorage.getItem('pwa_group_code') || 'HOME-8899';
@@ -908,15 +916,6 @@
     }
 
     function updateDashboardData() {
-      const productSelect = document.getElementById('trendProductSelect');
-      const uniqueProducts = [...new Set(records.map(r => r.name.trim()))];
-      
-      if (uniqueProducts.length > 0) {
-        productSelect.innerHTML = uniqueProducts.map(p => `<option value="${p}">${p}</option>`).join('');
-      } else {
-        productSelect.innerHTML = `<option value="">無商品資料</option>`;
-      }
-
       updateTrendChart();
       renderSavingsRanking();
       renderStoreCpRanking();
@@ -971,15 +970,47 @@
         return;
       }
 
-      const selectedProduct = document.getElementById('trendProductSelect').value;
+      const keywordInput = document.getElementById('trendSearchInput');
+      const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
       const ctx = document.getElementById('priceTrendChart').getContext('2d');
 
-      const matched = records
-        .filter(r => r.name.trim() === selectedProduct)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      // 找出符合關鍵字的所有相異商品名稱
+      const allProductNames = [...new Set(records.map(r => r.name.trim()))];
+      const matchedProducts = keyword 
+        ? allProductNames.filter(p => p.toLowerCase().includes(keyword))
+        : allProductNames.slice(0, 1); // 如果沒輸入關鍵字，預設顯示第一個商品
 
-      const labels = matched.map(r => `${toTaiwanDate(r.date)} (${r.store})`);
-      const dataPoints = matched.map(r => r.unit_price_num || (r.price / r.qty));
+      // 收集所有出現過的日期並排序
+      const allDates = [...new Set(records.map(r => r.date))].sort((a, b) => new Date(a) - new Date(b));
+      const labels = allDates.map(d => toTaiwanDate(d));
+
+      const datasets = [];
+
+      matchedProducts.forEach((prodName, idx) => {
+        const prodRecords = records
+          .filter(r => r.name.trim() === prodName)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // 對應每個日期找出當時的單價（若當天有多筆或無則對應）
+        const dataMap = {};
+        prodRecords.forEach(r => {
+          dataMap[r.date] = r.unit_price_num || (r.price / r.qty);
+        });
+
+        const dataPoints = allDates.map(d => dataMap[d] !== undefined ? dataMap[d] : null);
+        const color = chartColors[idx % chartColors.length];
+
+        datasets.push({
+          label: prodName,
+          data: dataPoints,
+          borderColor: color,
+          backgroundColor: color,
+          fill: false,
+          tension: 0.2,
+          pointRadius: 5,
+          spanGaps: true
+        });
+      });
 
       if (trendChartInstance) {
         trendChartInstance.destroy();
@@ -989,22 +1020,21 @@
         type: 'line',
         data: {
           labels: labels.length > 0 ? labels : ['無資料'],
-          datasets: [{
-            label: '換算單價 ($)',
-            data: dataPoints.length > 0 ? dataPoints : [0],
-            borderColor: '#0284c7',
-            backgroundColor: 'rgba(2, 132, 199, 0.1)',
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#0284c7',
-            pointRadius: 6
+          datasets: datasets.length > 0 ? datasets : [{
+            label: '請輸入關鍵字搜尋',
+            data: [0],
+            borderColor: '#cbd5e1'
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }
+            legend: { 
+              display: true,
+              position: 'bottom',
+              labels: { font: { weight: 'bold', size: 12 } }
+            }
           },
           scales: {
             y: { beginAtZero: false }
@@ -1126,8 +1156,13 @@
       } else if (tab === 'dashboard') {
         dashboardNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
         updateDashboardData();
-        // 強制重新計算 Chart.js 畫布大小
-        setTimeout(() => { if (trendChartInstance) trendChartInstance.resize(); }, 100);
+        // 強制重新計算 Chart.js 畫布大小並重新渲染
+        setTimeout(() => { 
+          if (trendChartInstance) {
+            trendChartInstance.resize();
+            trendChartInstance.update();
+          } 
+        }, 150);
       }
     }
 
