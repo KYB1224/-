@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>隨手比價 PWA</title>
   
-  <!-- PWA Manifest Integration -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"隨手比價","short_name":"比價","start_url":".","display":"standalone","background_color":"#f2f5f8","theme_color":"#0284c7"}'>
   <meta name="theme-color" content="#0284c7">
 
   <!-- Tailwind CSS -->
@@ -971,18 +969,15 @@
       const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
       const ctx = document.getElementById('priceTrendChart').getContext('2d');
 
-      // 取得所有相異商品名稱
       const allProductNames = [...new Set(records.map(r => (r.name || '').trim()))].filter(Boolean);
       
-      // 若沒輸入關鍵字，預設選取第一個商品（或顯示全部匹配）
       let matchedProducts = [];
       if (keyword) {
         matchedProducts = allProductNames.filter(p => p.toLowerCase().includes(keyword));
       } else if (allProductNames.length > 0) {
-        matchedProducts = [allProductNames[0]]; // 預設顯示第一項讓畫面有東西
+        matchedProducts = [allProductNames[0]];
       }
 
-      // 收集所有日期並排序
       const allDates = [...new Set(records.map(r => r.date))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
       const labels = allDates.length > 0 ? allDates.map(d => toTaiwanDate(d)) : ['無日期資料'];
 
@@ -1200,14 +1195,18 @@
 
     function registerServiceWorker() {
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        const swCode = `
-          self.addEventListener('install', e => self.skipWaiting());
-          self.addEventListener('activate', e => self.clients.claim());
-          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-        `;
-        const blob = new Blob([swCode], { type: 'text/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
+        try {
+          const swCode = `
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => self.clients.claim());
+            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+          `;
+          const blob = new Blob([swCode], { type: 'text/javascript' });
+          const swUrl = URL.createObjectURL(blob);
+          navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration suppressed:', err));
+        } catch(e) {
+          console.log('SW setup skipped');
+        }
       }
     }
   </script>
