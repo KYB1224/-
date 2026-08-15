@@ -788,11 +788,12 @@
     }
 
     function deleteShoppingItem(id) {
-      shoppingList = shoppingList.filter(i => !i.completed);
+      shoppingList = shoppingList.filter(i => i.id !== id);
       renderShoppingList();
     }
 
     function clearCompletedShoppingItems() {
+      // 修正：這裡改為過濾掉已完成的項目 (保留未完成的項目)
       shoppingList = shoppingList.filter(i => !i.completed);
       renderShoppingList();
     }
