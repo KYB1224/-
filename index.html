@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>隨手比價 PWA</title>
   
+  <!-- PWA Manifest Integration -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"隨手比價","short_name":"比價","start_url":".","display":"standalone","background_color":"#f2f5f8","theme_color":"#0284c7"}'>
   <meta name="theme-color" content="#0284c7">
 
   <!-- Tailwind CSS -->
@@ -15,9 +17,6 @@
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Chart.js (圖表繪製庫) -->
-  <script src="https://cdn.jsdelivr.net/npm/Chart.js"></script>
 
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -111,7 +110,7 @@
             </div>
             <div class="col-span-5">
               <label class="block text-sm font-black text-slate-600 mb-1.5">類別</label>
-              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-sm font-black text-slate-800">
+              <select id="inputCategory" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base font-black text-slate-800">
                 <option value="肉品">肉品</option>
                 <option value="蔬菜">蔬菜</option>
                 <option value="餅乾">餅乾</option>
@@ -182,31 +181,6 @@
       </div>
     </section>
 
-    <!-- 🛒 TAB 3: Smart Shopping List (智慧購物清單) -->
-    <section id="tab-list" class="space-y-4 hidden">
-      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
-        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
-          <i data-lucide="shopping-bag" class="w-5 h-5 text-sky-600"></i> 新增待買項目
-        </h3>
-        <form onsubmit="addShoppingItem(event)" class="flex gap-2">
-          <input type="text" id="shoppingInput" required placeholder="輸入欲購買商品 (如：鮮乳、衛生紙)..." 
-                 class="w-full p-3.5 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base font-bold text-slate-700">
-          <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white text-sm px-5 rounded-2xl font-bold shrink-0 transition flex items-center gap-1 shadow-sm">
-            <i data-lucide="plus" class="w-5 h-5"></i> 新增
-          </button>
-        </form>
-      </div>
-
-      <div class="flex justify-between items-center text-sm text-slate-500 px-1 font-bold">
-        <span id="shoppingCountText">待採買 0 項</span>
-        <button onclick="clearCompletedShoppingItems()" class="text-xs text-slate-400 hover:text-rose-500 font-bold transition flex items-center gap-1">
-          <i data-lucide="trash-2" class="w-4 h-4"></i> 清除已完成
-        </button>
-      </div>
-
-      <div id="shoppingListContainer" class="space-y-3"></div>
-    </section>
-
     <!-- TAB 4: Dashboard / Trend Analysis View -->
     <section id="tab-dashboard" class="space-y-4 hidden">
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
@@ -218,31 +192,6 @@
         </div>
         <p class="text-xs text-slate-400">統計歷史紀錄中，各賣場擁有「最低價商品」的次數排名：</p>
         <div id="storeCpRankingList" class="space-y-3 pt-1">
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
-        <div class="flex flex-col gap-2">
-          <h3 class="font-black text-slate-800 text-base flex items-center gap-1.5">
-            <i data-lucide="trending-down" class="w-5 h-5 text-sky-500"></i> 歷史價格走勢
-          </h3>
-          <div class="relative">
-            <i data-lucide="search" class="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5"></i>
-            <input type="text" id="trendSearchInput" oninput="updateTrendChart()" placeholder="輸入關鍵字搜尋 (例如: 南僑)..." 
-                   class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100 text-base font-black text-slate-800 border-0 focus:ring-2 focus:ring-sky-500 shadow-sm placeholder-slate-400">
-          </div>
-        </div>
-
-        <div class="w-full relative" style="height: 320px;">
-          <canvas id="priceTrendChart" class="w-full h-full"></canvas>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
-        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
-          <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i> 全商品省錢排行榜 (最低單價)
-        </h3>
-        <div id="savingsRankingList" class="space-y-3 text-sm">
         </div>
       </div>
 
@@ -406,29 +355,24 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation -->
+  <!-- Bottom Navigation (已移除購物清單導覽按鈕) -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3 px-6 z-30 shadow-lg">
-    <div class="max-w-md mx-auto flex justify-between items-end">
+    <div class="max-w-md mx-auto flex justify-around items-end">
       <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="search" class="w-6 h-6"></i>
-        <span class="text-xs font-black">查價格</span>
-      </button>
-
-      <button onclick="switchTab('list')" id="nav-list" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
-        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
-        <span class="text-xs font-black">購物清單</span>
+        <span class="text-xs font-bold">查價格</span>
       </button>
 
       <button onclick="switchTab('add')" id="nav-add" class="flex flex-col items-center gap-1 -mt-7">
         <div class="bg-[#0984e3] text-white rounded-full p-3.5 shadow-lg shadow-sky-400/40 hover:bg-sky-600 transition flex items-center justify-center w-14 h-14">
           <i data-lucide="plus" class="w-8 h-8 stroke-[3]"></i>
         </div>
-        <span class="text-xs font-black text-sky-600">記一筆</span>
+        <span class="text-xs font-bold text-sky-600">記一筆</span>
       </button>
 
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition">
         <i data-lucide="trending-up" class="w-6 h-6"></i>
-        <span class="text-xs font-black">分析</span>
+        <span class="text-xs font-bold">分析</span>
       </button>
     </div>
   </nav>
@@ -448,16 +392,9 @@
     }
 
     let records = [];
-    let shoppingList = [];
 
     let activeCategory = "全部";
     const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
-    let trendChartInstance = null;
-
-    const chartColors = [
-      '#0284c7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
-      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
-    ];
 
     function getCurrentGroupCode() {
       return localStorage.getItem('pwa_group_code') || 'HOME-8899';
@@ -474,11 +411,12 @@
     function toTaiwanDate(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
-      if (parts.length < 2) return dateStr;
+      if (parts.length < 3) return dateStr;
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
       const twYear = year - 1911;
-      return `民國${twYear}年${month}月`;
+      return `民國${twYear}年${month}月${day}日`;
     }
 
     window.onload = function() {
@@ -495,7 +433,6 @@
       calculateUnitPrice();
       checkDealAlert();
       fetchRecords();
-      renderShoppingList();
       registerServiceWorker();
     };
 
@@ -519,7 +456,6 @@
         renderRecords();
         updateDashboardData();
         checkDealAlert();
-        renderShoppingList();
       } catch (err) {
         console.error("雲端讀取失敗:", err);
         if (statusEl) statusEl.innerHTML = `<i data-lucide="cloud-off" class="w-3 h-3"></i> 同步失敗`;
@@ -552,7 +488,7 @@
     function getMinUnitPriceMap() {
       const minMap = {};
       records.forEach(r => {
-        const key = (r.name || '').trim();
+        const key = r.name.trim();
         const numPrice = r.unit_price_num || (r.price / r.qty);
         if (!minMap[key] || numPrice < minMap[key].val) {
           minMap[key] = {
@@ -590,7 +526,7 @@
 
       listContainer.innerHTML = filtered.map(r => {
         const numPrice = r.unit_price_num || (r.price / r.qty);
-        const minObj = minMap[(r.name || '').trim()];
+        const minObj = minMap[r.name.trim()];
         const isLowest = minObj && Math.abs(numPrice - minObj.val) < 0.0001;
         const displayDate = toTaiwanDate(r.date);
 
@@ -694,7 +630,6 @@
       toggleEditModal(false);
       renderRecords();
       updateDashboardData();
-      renderShoppingList();
     }
 
     async function deleteRecord(id) {
@@ -714,85 +649,6 @@
       records = records.filter(r => r.id !== id);
       renderRecords();
       updateDashboardData();
-      renderShoppingList();
-    }
-
-    function renderShoppingList() {
-      const container = document.getElementById('shoppingListContainer');
-      const countText = document.getElementById('shoppingCountText');
-      if (!container) return;
-
-      const activeItems = shoppingList.filter(i => !i.completed);
-      if (countText) countText.innerText = `待採買 ${activeItems.length} 項`;
-
-      if (shoppingList.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl text-sm font-bold text-slate-400">採買清單空空如也，新增一筆試試！</div>`;
-        return;
-      }
-
-      const minMap = getMinUnitPriceMap();
-
-      container.innerHTML = shoppingList.map(item => {
-        const bestDeal = minMap[(item.name || '').trim()];
-        
-        return `
-          <div class="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 ${item.completed ? 'opacity-50 bg-slate-50' : ''}">
-            <div class="flex items-center gap-3.5 min-w-0">
-              <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleShoppingItem(${item.id})" 
-                     class="w-6 h-6 rounded-lg text-sky-600 focus:ring-sky-500 cursor-pointer border-slate-300">
-              <div class="truncate">
-                <span class="text-base font-black text-slate-800 ${item.completed ? 'line-through text-slate-400' : ''}">
-                  ${item.name}
-                </span>
-                ${bestDeal && !item.completed ? `
-                  <div class="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-1">
-                    <i data-lucide="map-pin" class="w-4 h-4"></i> 推薦到 <strong>${bestDeal.store}</strong> 買最劃算 (${bestDeal.str})
-                  </div>
-                ` : (!item.completed ? `<div class="text-xs text-slate-400 mt-1 font-bold">尚無歷史價格紀錄</div>` : '')}
-              </div>
-            </div>
-
-            <button onclick="deleteShoppingItem(${item.id})" class="text-slate-300 hover:text-rose-500 p-2 transition">
-              <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-          </div>
-        `;
-      }).join('');
-      lucide.createIcons();
-    }
-
-    function addShoppingItem(e) {
-      e.preventDefault();
-      const input = document.getElementById('shoppingInput');
-      const name = input.value.trim();
-      if (!name) return;
-
-      shoppingList.unshift({
-        id: Date.now(),
-        name: name,
-        completed: false
-      });
-
-      input.value = '';
-      renderShoppingList();
-    }
-
-    function toggleShoppingItem(id) {
-      const item = shoppingList.find(i => i.id === id);
-      if (item) {
-        item.completed = !item.completed;
-        renderShoppingList();
-      }
-    }
-
-    function deleteShoppingItem(id) {
-      shoppingList = shoppingList.filter(i => i.id !== id);
-      renderShoppingList();
-    }
-
-    function clearCompletedShoppingItems() {
-      shoppingList = shoppingList.filter(i => !i.completed);
-      renderShoppingList();
     }
 
     function calculateUnitPrice() {
@@ -824,7 +680,7 @@
       }
 
       const currentUnitPrice = price / qty;
-      const matched = records.filter(r => (r.name || '').trim() === name && r.unit === unit);
+      const matched = records.filter(r => r.name.trim() === name && r.unit === unit);
 
       if (matched.length === 0) {
         banner.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-bold transition-all border flex items-center gap-2 bg-sky-50 border-sky-200 text-sky-700";
@@ -907,13 +763,10 @@
       checkDealAlert();
       renderRecords();
       updateDashboardData();
-      renderShoppingList();
       switchTab('search');
     }
 
     function updateDashboardData() {
-      updateTrendChart();
-      renderSavingsRanking();
       renderStoreCpRanking();
     }
 
@@ -958,134 +811,6 @@
           </div>
         </div>
       `).join('');
-    }
-
-    function updateTrendChart() {
-      if (typeof Chart === 'undefined') return;
-
-      const keywordInput = document.getElementById('trendSearchInput');
-      const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
-      const ctx = document.getElementById('priceTrendChart');
-      if (!ctx) return;
-
-      const allProductNames = [...new Set(records.map(r => (r.name || '').trim()))].filter(Boolean);
-      
-      let matchedProducts = [];
-      if (keyword) {
-        matchedProducts = allProductNames.filter(p => p.toLowerCase().includes(keyword));
-      } else if (allProductNames.length > 0) {
-        matchedProducts = [allProductNames[0]];
-      }
-
-      if (trendChartInstance) {
-        trendChartInstance.destroy();
-        trendChartInstance = null;
-      }
-
-      // 如果找不到相符的商品，顯示空圖表避免崩潰
-      if (matchedProducts.length === 0) {
-        trendChartInstance = new Chart(ctx.getContext('2d'), {
-          type: 'line',
-          data: {
-            labels: ['無符合商品'],
-            datasets: [{ label: '請輸入正確關鍵字', data: [0], borderColor: '#cbd5e1' }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
-        return;
-      }
-
-      const allDates = [...new Set(records.map(r => r.date))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
-      const labels = allDates.length > 0 ? allDates.map(d => toTaiwanDate(d)) : ['無日期資料'];
-
-      const datasets = [];
-
-      matchedProducts.forEach((prodName, idx) => {
-        const prodRecords = records
-          .filter(r => (r.name || '').trim() === prodName)
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        const datePriceMap = {};
-        prodRecords.forEach(r => {
-          datePriceMap[r.date] = r.unit_price_num || (r.price / r.qty);
-        });
-
-        const dataPoints = allDates.map(d => datePriceMap[d] !== undefined ? datePriceMap[d] : null);
-        const color = chartColors[idx % chartColors.length];
-
-        datasets.push({
-          label: prodName,
-          data: dataPoints,
-          borderColor: color,
-          backgroundColor: color,
-          fill: false,
-          tension: 0.1,
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          spanGaps: true
-        });
-      });
-
-      trendChartInstance = new Chart(ctx.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { 
-              display: true,
-              position: 'bottom',
-              labels: { font: { weight: 'bold', size: 12 } }
-            }
-          },
-          scales: {
-            y: { 
-              beginAtZero: false,
-              ticks: { font: { weight: 'bold' } }
-            },
-            x: {
-              ticks: { font: { weight: 'bold' } }
-            }
-          }
-        }
-      });
-    }
-
-    function renderSavingsRanking() {
-      const rankingContainer = document.getElementById('savingsRankingList');
-      if (!rankingContainer) return;
-
-      const sorted = [...records].sort((a, b) => {
-        const uA = a.unit_price_num || (a.price / a.qty);
-        const uB = b.unit_price_num || (b.price / b.qty);
-        return uA - uB;
-      });
-
-      if (sorted.length === 0) {
-        rankingContainer.innerHTML = `<div class="text-slate-400 text-center py-4 font-bold">尚無排行榜資料</div>`;
-        return;
-      }
-
-      const top3 = sorted.slice(0, 5);
-      rankingContainer.innerHTML = top3.map((r, index) => {
-        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-        return `
-          <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">${medals[index] || '🔹'}</span>
-              <div>
-                <span class="font-black text-slate-800 text-base">${r.name}</span>
-                <span class="text-xs font-bold text-slate-400 ml-1.5">(${r.store})</span>
-              </div>
-            </div>
-            <span class="font-black text-emerald-600 text-base">${r.unit_price_str}</span>
-          </div>
-        `;
-      }).join('');
     }
 
     function exportToCSV() {
@@ -1145,35 +870,23 @@
     function switchTab(tab) {
       document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
       document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
-      document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
       document.getElementById('tab-dashboard').classList.toggle('hidden', tab !== 'dashboard');
 
       const searchNav = document.getElementById('nav-search');
-      const listNav = document.getElementById('nav-list');
       const dashboardNav = document.getElementById('nav-dashboard');
       const addNavText = document.querySelector('#nav-add span');
 
       searchNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
-      listNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
       dashboardNav.className = 'flex flex-col items-center gap-1 text-slate-400 hover:text-sky-600 transition';
-      if (addNavText) addNavText.className = 'text-xs font-black text-slate-400';
+      if (addNavText) addNavText.className = 'text-xs font-bold text-slate-400';
 
       if (tab === 'search') {
         searchNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
-      } else if (tab === 'list') {
-        listNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
-        renderShoppingList();
       } else if (tab === 'add') {
-        if (addNavText) addNavText.className = 'text-xs font-black text-sky-600';
+        if (addNavText) addNavText.className = 'text-xs font-bold text-sky-600';
       } else if (tab === 'dashboard') {
         dashboardNav.className = 'flex flex-col items-center gap-1 text-sky-600 transition';
         updateDashboardData();
-        setTimeout(() => { 
-          if (trendChartInstance) {
-            trendChartInstance.resize();
-            trendChartInstance.update();
-          } 
-        }, 150);
       }
     }
 
@@ -1204,18 +917,14 @@
 
     function registerServiceWorker() {
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        try {
-          const swCode = `
-            self.addEventListener('install', e => self.skipWaiting());
-            self.addEventListener('activate', e => self.clients.claim());
-            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-          `;
-          const blob = new Blob([swCode], { type: 'text/javascript' });
-          const swUrl = URL.createObjectURL(blob);
-          navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration suppressed:', err));
-        } catch(e) {
-          console.log('SW setup skipped');
-        }
+        const swCode = `
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => self.clients.claim());
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed:', err));
       }
     }
   </script>
