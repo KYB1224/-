@@ -75,6 +75,7 @@
                 <option value="北海道">北海道</option>
                 <option value="開南食品">開南食品</option>
                 <option value="大發">大發</option>
+                <option value="萬家福">萬家福</option>
                 <option value="Costco">Costco</option>
                 <option value="7-11">7-ELEVEN</option>
                 <option value="全家">全家</option>
@@ -259,6 +260,7 @@
               <option value="北海道">北海道</option>
               <option value="開南食品">開南食品</option>
               <option value="大發">大發</option>
+              <option value="萬家福">萬家福</option>
               <option value="Costco">Costco</option>
               <option value="7-11">7-ELEVEN</option>
               <option value="全家">全家</option>
@@ -372,6 +374,29 @@
     let records = [];
     let activeCategory = "全部";
     const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
+
+    // 通路品牌 Logo 圖示對應表
+    const storeIcons = {
+      "大發": "https://i.meee.com.tw/ns6tytm.png",
+      "開南食品": "https://i.meee.com.tw/ZOdqqDG.jpg",
+      "百興隆": "https://i.meee.com.tw/m7aoD2H.jpg",
+      "北海道生鮮超市": "https://i.meee.com.tw/1THSTTq.jpg",
+      "北海道": "https://i.meee.com.tw/1THSTTq.jpg",
+      "蝦皮購物": "https://i.meee.com.tw/ESWDPdD.jpg",
+      "蝦皮": "https://i.meee.com.tw/ESWDPdD.jpg",
+      "愛買": "https://i.meee.com.tw/AhDxMfu.jpg",
+      "萬家福": "https://i.meee.com.tw/sa4r1mQ.jpg",
+      "全聯": "https://i.meee.com.tw/TDGiMEb.png",
+      "Costco": "https://i.meee.com.tw/3BF28DH.jpg",
+      "7-11": "https://i.meee.com.tw/h5EYgxR.jpg",
+      "7-ELEVEN": "https://i.meee.com.tw/h5EYgxR.jpg",
+      "全家": "https://i.meee.com.tw/MjZqaNI.jpg",
+      "菜市場": "https://i.meee.com.tw/2260eyW.png",
+      "傳統市場": "https://i.meee.com.tw/2260eyW.png",
+      "其他": "https://i.meee.com.tw/GMoXw4p.jpg",
+      "家樂福": "https://i.meee.com.tw/GMoXw4p.jpg",
+      "預設": "https://i.meee.com.tw/GMoXw4p.jpg"
+    };
 
     function getCurrentGroupCode() {
       return localStorage.getItem('pwa_group_code') || 'HOME-8899';
@@ -506,6 +531,9 @@
         const isLowest = minObj && Math.abs(numPrice - minObj.val) < 0.0001;
         const displayDate = formatWesternDate(r.date);
 
+        // 取得對應的通路 Logo，若沒有設定則使用預設圖示
+        const logoUrl = storeIcons[r.store] || storeIcons["預設"];
+
         return `
           <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2.5 relative overflow-hidden">
             <div class="flex justify-between items-start gap-3">
@@ -519,9 +547,10 @@
               </div>
             </div>
 
-            <!-- 第二行：通路、金額與歷史最低標籤並排 -->
+            <!-- 第二行：通路 Logo + 名稱、金額與歷史最低標籤並排 -->
             <div class="flex items-center justify-between text-xs font-bold text-slate-500 overflow-hidden">
               <div class="flex items-center space-x-1.5 truncate">
+                <img src="${logoUrl}" alt="${r.store}" class="w-4 h-4 rounded-full object-cover inline-block shrink-0 shadow-xs border border-slate-100">
                 <span class="text-slate-700">${r.store || ''}</span>
                 <span>•</span>
                 <span>金額 $${r.price} / ${r.qty}${r.unit}</span>
@@ -540,7 +569,7 @@
               <div class="inline-flex items-center gap-1 text-xs font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-xl w-fit">💬 ${r.note}</div>
             </div>` : ''}
 
-            <!-- 最下方：日期與換算單價排在同一行（拿掉「單價」二字） -->
+            <!-- 最下方：日期與換算單價排在同一行 -->
             <div class="flex items-center justify-between text-xs font-medium text-slate-400 pt-1.5 border-t border-slate-100">
               <span>${displayDate}</span>
               <div class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-0.5 rounded-lg text-xs font-black tracking-tight">
@@ -782,20 +811,24 @@
 
       const icons = ['👑', '🥈', '🥉'];
 
-      container.innerHTML = sortedStores.map((item, idx) => `
-        <div class="space-y-1.5 text-xs">
-          <div class="flex justify-between items-center font-black text-slate-700 text-sm">
-            <span class="flex items-center gap-1.5">
-              <span>${icons[idx] || '🏪'}</span>
-              <span>${item.store}</span>
-            </span>
-            <span class="text-emerald-600 font-black">${item.wins} 項歷史最低 (${item.rate}%)</span>
+      container.innerHTML = sortedStores.map((item, idx) => {
+        const logoUrl = storeIcons[item.store] || storeIcons["預設"];
+        return `
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between items-center font-black text-slate-700 text-sm">
+              <span class="flex items-center gap-1.5">
+                <span>${icons[idx] || '🏪'}</span>
+                <img src="${logoUrl}" alt="${item.store}" class="w-4 h-4 rounded-full object-cover inline-block shrink-0 shadow-xs border border-slate-100">
+                <span>${item.store}</span>
+              </span>
+              <span class="text-emerald-600 font-black">${item.wins} 項歷史最低 (${item.rate}%)</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: ${item.rate}%"></div>
+            </div>
           </div>
-          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-            <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: ${item.rate}%"></div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function exportToCSV() {
