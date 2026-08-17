@@ -165,15 +165,15 @@
 
     <!-- TAB 4: Dashboard / Trend Analysis View -->
     <section id="tab-dashboard" class="space-y-4 hidden">
-      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-4">
         <div class="flex justify-between items-center">
-          <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
-            <i data-lucide="store" class="w-5 h-5 text-emerald-600"></i> 通路 CP 值大比拼
+          <h3 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+            <i data-lucide="store" class="w-6 h-6 text-emerald-600"></i> 通路 CP 值大比拼
           </h3>
-          <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold">最省錢賣場</span>
+          <span class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-extrabold">最省錢賣場</span>
         </div>
-        <p class="text-xs text-slate-400">統計歷史紀錄中，各賣場擁有「最低價商品」的次數排名：</p>
-        <div id="storeCpRankingList" class="space-y-3 pt-1"></div>
+        <p class="text-sm text-slate-500 font-bold">統計歷史紀錄中，各賣場擁有「最低價商品」的次數排名：</p>
+        <div id="storeCpRankingList" class="space-y-4 pt-1"></div>
       </div>
 
       <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
@@ -809,22 +809,20 @@
         }))
         .sort((a, b) => b.wins - a.wins);
 
-      const icons = ['👑', '🥈', '🥉'];
-
-      container.innerHTML = sortedStores.map((item, idx) => {
+      // 移除原有的名次符號（冠、亞、季軍圖示），只保留通道 Logo 與名稱、數據，並放大字體與間距
+      container.innerHTML = sortedStores.map((item) => {
         const logoUrl = storeIcons[item.store] || storeIcons["預設"];
         return `
-          <div class="space-y-1.5 text-xs">
-            <div class="flex justify-between items-center font-black text-slate-700 text-sm">
-              <span class="flex items-center gap-1.5">
-                <span>${icons[idx] || '🏪'}</span>
-                <img src="${logoUrl}" alt="${item.store}" class="w-4 h-4 rounded-full object-cover inline-block shrink-0 shadow-xs border border-slate-100">
-                <span>${item.store}</span>
+          <div class="space-y-2 text-sm bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <div class="flex justify-between items-center font-black text-slate-800 text-base">
+              <span class="flex items-center gap-2.5">
+                <img src="${logoUrl}" alt="${item.store}" class="w-6 h-6 rounded-full object-cover inline-block shrink-0 shadow-sm border border-slate-200">
+                <span class="text-base">${item.store}</span>
               </span>
-              <span class="text-emerald-600 font-black">${item.wins} 項歷史最低 (${item.rate}%)</span>
+              <span class="text-emerald-600 font-black text-base">${item.wins} 項歷史最低 (${item.rate}%)</span>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-              <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: ${item.rate}%"></div>
+            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+              <div class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: ${item.rate}%"></div>
             </div>
           </div>
         `;
