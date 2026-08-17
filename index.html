@@ -21,7 +21,7 @@
     input, select { font-size: 1rem !important; }
   </style>
 </head>
-<body class="bg-[#f2f5f8] min-h-screen text-slate-800 pb-32 font-sans selection:bg-sky-500 selection:text-white">
+<body class="bg-[#f2f5f8] min-h-screen text-slate-800 pb-32 font-sans selection:bg-sky-500 selection:text-white" onclick="closeAllCustomDropdowns(event)">
 
   <main class="max-w-md mx-auto p-3 space-y-4">
     <header class="flex flex-col gap-2.5 py-1 px-1">
@@ -64,25 +64,19 @@
         <form id="priceForm" onsubmit="saveRecord(event)" class="space-y-4">
           
           <div class="grid grid-cols-2 gap-3">
-            <div>
+            <!-- 自訂帶 Logo 的通路下拉選單 (新增表單) -->
+            <div class="relative">
               <label class="block text-sm font-black text-slate-600 mb-1.5">通路</label>
-              <select id="inputStore" required class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base font-black text-slate-800">
-                <option value="全聯" selected>全聯</option>
-                <option value="家樂福">家樂福</option>
-                <option value="愛買">愛買</option>
-                <option value="百興隆">百興隆</option>
-                <option value="蝦皮">蝦皮</option>
-                <option value="北海道">北海道</option>
-                <option value="開南食品">開南食品</option>
-                <option value="大發">大發</option>
-                <option value="萬家福">萬家福</option>
-                <option value="Costco">Costco</option>
-                <option value="7-11">7-ELEVEN</option>
-                <option value="全家">全家</option>
-                <option value="傳統市場">傳統市場</option>
-                <option value="其他">其他</option>
-              </select>
+              <input type="hidden" id="inputStore" value="全聯">
+              <button type="button" onclick="toggleCustomDropdown('addStoreDropdown', event)" class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 flex items-center justify-between text-base font-black text-slate-800">
+                <span id="addStoreSelectedLabel" class="flex items-center gap-2 truncate">
+                  <img src="https://i.meee.com.tw/TDGiMEb.png" class="w-5 h-5 rounded-full object-cover shrink-0"> 全聯
+                </span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0"></i>
+              </button>
+              <div id="addStoreDropdown" class="absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-60 overflow-y-auto hidden"></div>
             </div>
+
             <div>
               <label class="block text-sm font-black text-slate-600 mb-1.5">日期</label>
               <input type="date" id="inputDate" required class="w-full p-3.5 sm:p-4 rounded-2xl bg-slate-100/90 border-0 focus:ring-2 focus:ring-sky-500 text-base font-black text-slate-800">
@@ -249,25 +243,19 @@
         <input type="hidden" id="editId">
 
         <div class="grid grid-cols-2 gap-3">
-          <div>
+          <!-- 自訂帶 Logo 的通路下拉選單 (編輯 Modal) -->
+          <div class="relative">
             <label class="block text-xs font-black text-slate-600 mb-1">通路</label>
-            <select id="editStore" required class="w-full p-3 rounded-xl bg-slate-100 border-0 text-sm font-black text-slate-800">
-              <option value="全聯">全聯</option>
-              <option value="家樂福">家樂福</option>
-              <option value="愛買">愛買</option>
-              <option value="百興隆">百興隆</option>
-              <option value="蝦皮">蝦皮</option>
-              <option value="北海道">北海道</option>
-              <option value="開南食品">開南食品</option>
-              <option value="大發">大發</option>
-              <option value="萬家福">萬家福</option>
-              <option value="Costco">Costco</option>
-              <option value="7-11">7-ELEVEN</option>
-              <option value="全家">全家</option>
-              <option value="傳統市場">傳統市場</option>
-              <option value="其他">其他</option>
-            </select>
+            <input type="hidden" id="editStore" value="全聯">
+            <button type="button" onclick="toggleCustomDropdown('editStoreDropdown', event)" class="w-full p-3 rounded-xl bg-slate-100 border-0 flex items-center justify-between text-sm font-black text-slate-800">
+              <span id="editStoreSelectedLabel" class="flex items-center gap-2 truncate">
+                <img src="https://i.meee.com.tw/TDGiMEb.png" class="w-4 h-4 rounded-full object-cover shrink-0"> 全聯
+              </span>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0"></i>
+            </button>
+            <div id="editStoreDropdown" class="absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-60 overflow-y-auto hidden"></div>
           </div>
+
           <div>
             <label class="block text-xs font-black text-slate-600 mb-1">日期</label>
             <input type="date" id="editDate" required class="w-full p-3 rounded-xl bg-slate-100 border-0 text-sm font-black text-slate-800">
@@ -375,6 +363,10 @@
     let activeCategory = "全部";
     const categories = ["全部", "肉品", "蔬菜", "餅乾", "飲料/沖泡粉", "乾糧/罐頭", "冷藏/冷凍", "清潔用品", "保養/美妝", "生活用品", "藥品/保健品", "其他"];
 
+    const storeOptionsList = [
+      "全聯", "萬家福", "愛買", "百興隆", "蝦皮", "北海道", "開南食品", "大發", "Costco", "7-ELEVEN", "全家", "傳統市場", "其他"
+    ];
+
     // 通路品牌 Logo 圖示對應表
     const storeIcons = {
       "大發": "https://i.meee.com.tw/ns6tytm.png",
@@ -394,7 +386,6 @@
       "菜市場": "https://i.meee.com.tw/2260eyW.png",
       "傳統市場": "https://i.meee.com.tw/2260eyW.png",
       "其他": "https://i.meee.com.tw/GMoXw4p.jpg",
-      "家樂福": "https://i.meee.com.tw/GMoXw4p.jpg",
       "預設": "https://i.meee.com.tw/GMoXw4p.jpg"
     };
 
@@ -423,6 +414,7 @@
     window.onload = function() {
       lucide.createIcons();
       updateGroupUI();
+      buildCustomDropdown('addStoreDropdown', 'inputStore', 'addStoreSelectedLabel', '全聯');
 
       const dateEl = document.getElementById('inputDate');
       if (dateEl) {
@@ -436,6 +428,53 @@
       fetchRecords();
       registerServiceWorker();
     };
+
+    // 建立自訂下拉選單內容
+    function buildCustomDropdown(dropdownId, hiddenInputId, labelId, selectedValue) {
+      const dropdown = document.getElementById(dropdownId);
+      if (!dropdown) return;
+
+      dropdown.innerHTML = storeOptionsList.map(store => {
+        const logo = storeIcons[store] || storeIcons["預設"];
+        const isSelected = (store === selectedValue);
+        return `
+          <div onclick="selectCustomOption('${dropdownId}', '${hiddenInputId}', '${labelId}', '${store}')"
+               class="flex items-center gap-3 px-4 py-3 hover:bg-sky-50 cursor-pointer font-bold text-slate-700 transition ${isSelected ? 'bg-sky-50/80 text-sky-700' : ''}">
+            <img src="${logo}" class="w-5 h-5 rounded-full object-cover shrink-0 shadow-xs border border-slate-200">
+            <span>${store}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleCustomDropdown(dropdownId, event) {
+      if (event) event.stopPropagation();
+      // 關閉其他下拉
+      ['addStoreDropdown', 'editStoreDropdown'].forEach(id => {
+        if (id !== dropdownId) document.getElementById(id)?.classList.add('hidden');
+      });
+      const el = document.getElementById(dropdownId);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function selectCustomOption(dropdownId, hiddenInputId, labelId, storeName) {
+      document.getElementById(hiddenInputId).value = storeName;
+      const logo = storeIcons[storeName] || storeIcons["預設"];
+      document.getElementById(labelId).innerHTML = `
+        <img src="${logo}" class="w-5 h-5 rounded-full object-cover shrink-0"> ${storeName}
+      `;
+      document.getElementById(dropdownId).classList.add('hidden');
+      if (dropdownId === 'addStoreDropdown') {
+        checkDealAlert();
+      }
+    }
+
+    function closeAllCustomDropdowns(event) {
+      if (!event.target.closest('.relative')) {
+        document.getElementById('addStoreDropdown')?.classList.add('hidden');
+        document.getElementById('editStoreDropdown')?.classList.add('hidden');
+      }
+    }
 
     async function fetchRecords() {
       const statusEl = document.getElementById('cloudStatus');
@@ -530,8 +569,6 @@
         const minObj = minMap[r.name.trim()];
         const isLowest = minObj && Math.abs(numPrice - minObj.val) < 0.0001;
         const displayDate = formatWesternDate(r.date);
-
-        // 取得對應的通路 Logo，若沒有設定則使用預設圖示
         const logoUrl = storeIcons[r.store] || storeIcons["預設"];
 
         return `
@@ -547,7 +584,6 @@
               </div>
             </div>
 
-            <!-- 第二行：通路 Logo + 名稱、金額與歷史最低標籤並排 -->
             <div class="flex items-center justify-between text-xs font-bold text-slate-500 overflow-hidden">
               <div class="flex items-center space-x-1.5 truncate">
                 <img src="${logoUrl}" alt="${r.store}" class="w-4 h-4 rounded-full object-cover inline-block shrink-0 shadow-xs border border-slate-100">
@@ -563,13 +599,11 @@
               </div>` : ''}
             </div>
 
-            <!-- 第三行：備註（如果有填寫） -->
             ${r.note ? `
             <div class="flex items-center flex-wrap gap-2 pt-0.5">
               <div class="inline-flex items-center gap-1 text-xs font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-xl w-fit">💬 ${r.note}</div>
             </div>` : ''}
 
-            <!-- 最下方：日期與換算單價排在同一行 -->
             <div class="flex items-center justify-between text-xs font-medium text-slate-400 pt-1.5 border-t border-slate-100">
               <span>${displayDate}</span>
               <div class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-0.5 rounded-lg text-xs font-black tracking-tight">
@@ -586,8 +620,16 @@
       const record = records.find(r => r.id === id);
       if (!record) return;
 
+      const storeVal = record.store || '全聯';
       document.getElementById('editId').value = record.id;
-      document.getElementById('editStore').value = record.store || '全聯';
+      document.getElementById('editStore').value = storeVal;
+      
+      const logo = storeIcons[storeVal] || storeIcons["預設"];
+      document.getElementById('editStoreSelectedLabel').innerHTML = `
+        <img src="${logo}" class="w-4 h-4 rounded-full object-cover shrink-0"> ${storeVal}
+      `;
+      buildCustomDropdown('editStoreDropdown', 'editStore', 'editStoreSelectedLabel', storeVal);
+
       document.getElementById('editDate').value = record.date || new Date().toISOString().split('T')[0];
       document.getElementById('editName').value = record.name || '';
       document.getElementById('editCategory').value = record.category || '生活用品';
@@ -769,7 +811,9 @@
       
       const dateEl = document.getElementById('inputDate');
       if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-      document.getElementById('inputStore').value = "全聯";
+      
+      // 重設通路選擇為全聯
+      selectCustomOption('addStoreDropdown', 'inputStore', 'addStoreSelectedLabel', '全聯');
       document.getElementById('inputCategory').value = "生活用品";
       document.getElementById('inputUnit').value = "ml";
 
@@ -809,7 +853,6 @@
         }))
         .sort((a, b) => b.wins - a.wins);
 
-      // 移除原有的名次符號（冠、亞、季軍圖示），只保留通道 Logo 與名稱、數據，並放大字體與間距
       container.innerHTML = sortedStores.map((item) => {
         const logoUrl = storeIcons[item.store] || storeIcons["預設"];
         return `
